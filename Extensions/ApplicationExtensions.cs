@@ -16,56 +16,38 @@ namespace SmartCard.Extensions
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                var loggerFactory = scope.ServiceProvider.GetService<ILoggerFactory>();
+                var logger = loggerFactory?.CreateLogger("DatabaseInitializer");
 
                 try
                 {
-                    // Create database and tables if they don't exist
+                    logger?.LogInformation("Ensuring database tables exist...");
+                    
                     var databaseCreator = context.Database.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
                     if (!databaseCreator.Exists())
                     {
-                        databaseCreator.Create();
+                        await databaseCreator.CreateAsync();
                     }
                     if (!databaseCreator.HasTables())
                     {
-                        databaseCreator.CreateTables();
+                        await databaseCreator.CreateTablesAsync();
                     }
+                    
+                    logger?.LogInformation("Database tables ready. Seeding default roles and admin...");
 
                     // Create default roles
                     await CreateDefaultRolesAsync(roleManager, userManager);
 
                     // Create default admin user if it doesn't exist
                     await CreateDefaultAdminUserAsync(userManager, roleManager);
+                    
+                    logger?.LogInformation("Database initialization completed successfully.");
                 }
-                catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Message.Contains("Departments") || ex.Message.Contains("invalid object name"))
+                catch (Exception ex)
                 {
-                    // If migration fails due to table issues, try raw SQL as fallback
-                    try
-                    {
-                        // Execute raw SQL to create the Departments table if it doesn't exist
-                        context.Database.ExecuteSqlRaw(@"
-                            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Departments' AND xtype='U')
-                            BEGIN
-                                CREATE TABLE Departments (
-                                    Id int IDENTITY(1,1) PRIMARY KEY,
-                                    Name nvarchar(100) NOT NULL,
-                                    CreatedDate datetime2 DEFAULT GETDATE()
-                                );
-                            END
-                        ");
-
-                        // Add DepartmentId column to Employees if it doesn't exist
-                        context.Database.ExecuteSqlRaw(@"
-                            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Employees') AND name = 'DepartmentId')
-                            BEGIN
-                                ALTER TABLE Employees ADD DepartmentId int NULL;
-                            END
-                        ");
-                    }
-                    catch
-                    {
-                        // If raw SQL also fails, continue - the app will handle missing features gracefully
-                    }
-                }
+                    logger?.LogError(ex, "Error during database initialization: {Message}", ex.Message);
+                    // Let the application continue running or rethrow if critical
+                    throw;
             }
         }
 
