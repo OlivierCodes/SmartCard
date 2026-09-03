@@ -177,15 +177,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// L’écoute sur toutes les interfaces réseau
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(5000);
-    options.ListenAnyIP(5001, listenOptions =>
-    {
-        listenOptions.UseHttps();
-    });
-});
 
 // CORS policy to allow requests from local network (for testing purposes)
 builder.Services.AddCors(options =>
