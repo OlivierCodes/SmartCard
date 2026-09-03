@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using SmartCard.Data;
 using SmartCard.Models;
 
@@ -17,17 +19,22 @@ namespace SmartCard.Extensions
 
                 try
                 {
-                    // Create database if it doesn't exist
-                    context.Database.EnsureCreated();
+                    // Create database and tables if they don't exist
+                    var databaseCreator = context.Database.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
+                    if (!databaseCreator.Exists())
+                    {
+                        databaseCreator.Create();
+                    }
+                    if (!databaseCreator.HasTables())
+                    {
+                        databaseCreator.CreateTables();
+                    }
 
                     // Create default roles
                     await CreateDefaultRolesAsync(roleManager, userManager);
 
                     // Create default admin user if it doesn't exist
                     await CreateDefaultAdminUserAsync(userManager, roleManager);
-
-                    // Skip migrations since tables already exist
-                    // context.Database.Migrate();
                 }
                 catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Message.Contains("Departments") || ex.Message.Contains("invalid object name"))
                 {

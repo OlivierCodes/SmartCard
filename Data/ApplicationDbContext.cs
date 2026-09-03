@@ -45,7 +45,7 @@ namespace SmartCard.Data
             {
                 entity.HasKey(d => d.Id);
                 entity.Property(d => d.Name).IsRequired().HasMaxLength(100);
-                entity.Property(d => d.CreatedDate).HasDefaultValueSql("GETDATE()");
+                entity.Property(d => d.CreatedDate).HasDefaultValueSql(Database.IsNpgsql() ? "CURRENT_TIMESTAMP" : "GETDATE()");
             });
 
             // Card configuration
@@ -86,7 +86,7 @@ namespace SmartCard.Data
             {
                 entity.HasKey(c => c.Id);
                 entity.Property(c => c.AmountInLiters).HasColumnType("decimal(10,2)");
-                entity.Property(c => c.TransactionDate).HasDefaultValueSql("GETDATE()");
+                entity.Property(c => c.TransactionDate).HasDefaultValueSql(Database.IsNpgsql() ? "CURRENT_TIMESTAMP" : "GETDATE()");
                 entity.Property(c => c.Description).HasMaxLength(200);
                 
                 entity.HasOne(c => c.Employee)
