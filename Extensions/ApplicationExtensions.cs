@@ -48,6 +48,7 @@ namespace SmartCard.Extensions
                     logger?.LogError(ex, "Error during database initialization: {Message}", ex.Message);
                     // Let the application continue running or rethrow if critical
                     throw;
+                }
             }
         }
 
