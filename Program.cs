@@ -29,14 +29,23 @@ builder.Services.AddControllers() // Add this for API controllers
     });
 
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "";
 
-//builder.Services.AddDbContext<ApplicationDbContext>(options =>
-//    options.UseNpgsql(
-//        builder.Configuration.GetConnectionString("DefaultConnection")
-//    ));
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    // Auto-detect PostgreSQL (e.g. Render / Heroku / Neon connection strings or keywords like Host/Username/postgres://)
+    if (connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase) ||
+        connectionString.Contains("Username=", StringComparison.OrdinalIgnoreCase) ||
+        connectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
+        connectionString.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseNpgsql(connectionString);
+    }
+    else
+    {
+        options.UseSqlServer(connectionString);
+    }
+});
 
 // Add Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
