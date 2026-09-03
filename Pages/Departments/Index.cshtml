@@ -1,0 +1,480 @@
+@page
+@{
+    ViewData["Title"] = "Gestion des Départements";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Gestion des Départements</h1>
+    <button type="button" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addDepartmentModal">
+        <i class="fas fa-plus fa-sm text-white-50 me-1"></i> Ajouter Département
+    </button>
+</div>
+
+<!-- Filtres de recherche -->
+<div class="row mb-4">
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="form-group">
+            <label for="searchInput">Rechercher</label>
+            <input type="text" class="form-control" id="searchInput" placeholder="Nom du département...">
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-6 mb-4 d-flex align-items-end">
+        <button type="button" class="btn btn-primary me-2" id="searchBtn">
+            <i class="fas fa-search me-1"></i>Rechercher
+        </button>
+        <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn">
+            <i class="fas fa-sync-alt me-1"></i>Réinitialiser
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Liste des Départements</h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                        <div class="dropdown-header">Options:</div>
+                        <a class="dropdown-item" href="#">Exporter</a>
+                        <a class="dropdown-item" href="#">Imprimer</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item text-danger" href="#">Supprimer</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="departmentsTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Nom du Département</th>
+                                <th>Nombre d'Employés</th>
+                                <th>Date de Création</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded via API -->
+                            <tr>
+                                <td colspan="4" class="text-center">Chargement des données...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Department Modal -->
+<div class="modal fade" id="addDepartmentModal" tabindex="-1" aria-labelledby="addDepartmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addDepartmentModalLabel">Gestion Département</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <form id="departmentForm">
+                    <input type="hidden" id="departmentId" value="0" />
+                    <div class="mb-3">
+                        <label for="departmentName" class="form-label">Nom du Département</label>
+                        <input type="text" class="form-control" id="departmentName" required>
+                        <div class="form-text">Entrez le nom du département</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="saveDepartmentBtn">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto" id="toastTitle">Titre</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastBody">
+            Corps du message
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let departments = [];
+        let tableExists = true; // Flag to track if departments table exists
+
+        // Fonction pour afficher un toast
+        function showToast(title, message, type = 'info') {
+            const toastElement = document.getElementById('liveToast');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastBody = document.getElementById('toastBody');
+
+            // Appliquer la couleur en fonction du type
+            const toastHeader = toastElement.querySelector('.toast-header');
+            toastHeader.className = 'toast-header';
+            if (type === 'success') {
+                toastHeader.classList.add('text-success');
+            } else if (type === 'error') {
+                toastHeader.classList.add('text-danger');
+            } else if (type === 'warning') {
+                toastHeader.classList.add('text-warning');
+            }
+
+            toastTitle.textContent = title;
+            toastBody.textContent = message;
+
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        }
+
+        // Fonction pour afficher une modal de confirmation
+        function showConfirmationModal(title, message, confirmCallback) {
+            // Créer la modal dynamiquement si elle n'existe pas
+            let modal = document.getElementById('confirmationModal');
+            if (!modal) {
+                const modalHtml = `
+                    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="confirmationModalLabel">Confirmation</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p id="confirmationMessage"></p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirmer</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                modal = document.getElementById('confirmationModal');
+
+                // Ajouter l'événement de confirmation
+                document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+                    const callback = modal.getAttribute('data-callback');
+                    if (window[callback]) {
+                        window[callback]();
+                    }
+                    bootstrap.Modal.getInstance(modal).hide();
+                });
+            }
+
+            // Mettre à jour le message
+            document.getElementById('confirmationMessage').textContent = message;
+
+            // Associer la fonction de callback
+            modal.setAttribute('data-callback', confirmCallback);
+
+            // Afficher la modal
+            const confirmationModal = new bootstrap.Modal(modal);
+            confirmationModal.show();
+        }
+
+        // Function to add authorization header to fetch requests
+        function fetchWithAuth(url, options = {}) {
+            // Use Identity authentication cookies instead of JWT
+            const headers = {
+                ...options.headers
+            };
+
+            // Add content-type if it's not already specified and we're sending JSON
+            if (!headers['Content-Type'] && options.body && typeof options.body === 'string') {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            return fetch(url, {
+                ...options,
+                headers,
+                credentials: 'include'  // Include authentication cookies
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    // Unauthorized - redirect to login
+                    window.location.href = '/Login';
+                }
+                return response;
+            });
+        }
+
+        function loadDepartments() {
+            fetchWithAuth('/api/departments')
+                .then(response => {
+                    if (response.status === 401) {
+                        // Unauthorized - redirect to login
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    if (response.status === 400 || response.status === 500) {
+                        // Table doesn't exist, show message and disable functionality
+                        tableExists = false;
+                        displayNoTableMessage();
+                        return [];
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (tableExists) {
+                        departments = data;
+                        renderDepartmentsTable();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading departments:', error);
+                    // Check if it's a table not found error
+                    if (error.message.includes('Departments') || error.message.includes('invalid object name')) {
+                        tableExists = false;
+                        displayNoTableMessage();
+                    }
+                });
+        }
+
+        function displayNoTableMessage() {
+            const tbody = document.querySelector('#departmentsTable tbody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        La table "Departments" n'existe pas dans la base de données.<br>
+                        <small>Veuillez exécuter les migrations pour créer la table.</small>
+                    </td>
+                </tr>
+            `;
+
+            // Disable the add department button
+            const addButton = document.querySelector('button[data-bs-target="#addDepartmentModal"]');
+            if (addButton) {
+                addButton.disabled = true;
+                addButton.title = "Fonctionnalité indisponible - Table manquante";
+            }
+        }
+
+        function renderDepartmentsTable() {
+            const tbody = document.querySelector('#departmentsTable tbody');
+            tbody.innerHTML = '';
+
+            if (departments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">Aucun département trouvé</td></tr>';
+                return;
+            }
+
+            departments.forEach(department => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${department.name}</td>
+                    <td>${department.employeeCount}</td>
+                    <td>${new Date(department.createdDate).toLocaleDateString()}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editDepartment(${department.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-info" onclick="viewEmployees(${department.id})"><i class="fas fa-users"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteDepartment(${department.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function editDepartment(id) {
+            if (!tableExists) {
+                showToast('Erreur', 'La fonctionnalité est indisponible : la table Departments n\'existe pas dans la base de données.', 'error');
+                return;
+            }
+
+            const department = departments.find(dep => dep.id === id);
+            if (department) {
+                document.getElementById('departmentId').value = department.id;
+                document.getElementById('departmentName').value = department.name;
+
+                document.getElementById('addDepartmentModalLabel').textContent = 'Modifier Département';
+                document.getElementById('saveDepartmentBtn').textContent = 'Mettre à Jour';
+                const modal = new bootstrap.Modal(document.getElementById('addDepartmentModal'));
+                modal.show();
+            }
+        }
+
+        function viewEmployees(departmentId) {
+            if (!tableExists) {
+                showToast('Erreur', 'La fonctionnalité est indisponible : la table Departments n\'existe pas dans la base de données.', 'error');
+                return;
+            }
+            // You can implement navigation to a page showing employees in this department
+            window.location.href = `/Employees?departmentId=${departmentId}`;
+        }
+
+        function deleteDepartment(id) {
+            if (!tableExists) {
+                showToast('Erreur', 'La fonctionnalité est indisponible : la table Departments n\'existe pas dans la base de données.', 'error');
+                return;
+            }
+
+            // Fonction de suppression confirmée
+            window.confirmedDeleteDepartment = function() {
+                fetchWithAuth(`/api/departments/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.status === 401) {
+                        // Unauthorized - redirect to login
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    if (response.ok) {
+                        loadDepartments();
+                        showToast('Succès', 'Département supprimé avec succès', 'success');
+                    } else if (response.status === 400) {
+                        showToast('Erreur', 'La table Departments n\'existe pas dans la base de données.', 'error');
+                    } else {
+                        showToast('Erreur', 'Erreur lors de la suppression du département', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting department:', error);
+                    showToast('Erreur', 'Erreur lors de la suppression du département', 'error');
+                });
+            };
+
+            showConfirmationModal('Confirmation', 'Êtes-vous sûr de vouloir supprimer ce département ?', 'confirmedDeleteDepartment');
+        }
+
+        document.getElementById('saveDepartmentBtn').addEventListener('click', function() {
+            if (!tableExists) {
+                showToast('Erreur', 'La fonctionnalité est indisponible : la table Departments n\'existe pas dans la base de données.', 'error');
+                return;
+            }
+
+            const id = document.getElementById('departmentId').value;
+            const name = document.getElementById('departmentName').value.trim();
+
+            // Validation côté client
+            if (!name) {
+                showToast('Erreur', 'Le nom du département est requis', 'error');
+                return;
+            }
+
+            // Pour la mise à jour, l'ID doit être inclus dans le corps de la requête
+            const departmentData = {
+                id: parseInt(id),  // IMPORTANT: inclure l'ID pour la mise à jour
+                name: name
+            };
+
+            const isUpdate = id !== '0' && id !== 'undefined' && id !== '';
+            const url = isUpdate ? `/api/departments/${id}` : '/api/departments';
+            const method = isUpdate ? 'PUT' : 'POST';
+            const actionText = isUpdate ? 'mis à jour' : 'ajouté';
+
+            fetchWithAuth(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(departmentData)
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    // Unauthorized - redirect to login
+                    window.location.href = '/Login';
+                    return;
+                }
+                if (response.ok) {
+                    return response.json();
+                } else if (response.status === 400) {
+                    return response.json().then(errorData => {
+                        throw new Error(`Erreur 400 - ${errorData.title || 'Bad Request'}: ${errorData.detail || errorData.message || 'Erreur de validation'}`);
+                    });
+                } else if (response.status === 404) {
+                    throw new Error('Département non trouvé (404)');
+                } else {
+                    throw new Error(`Erreur serveur (${response.status}): ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                loadDepartments();
+                showToast('Succès', `Département ${actionText} avec succès`, 'success');
+                // Réinitialiser le formulaire
+                document.getElementById('departmentForm').reset();
+                document.getElementById('departmentId').value = '0';
+                document.getElementById('addDepartmentModalLabel').textContent = 'Gestion Département';
+                document.getElementById('saveDepartmentBtn').textContent = 'Enregistrer';
+                bootstrap.Modal.getInstance(document.getElementById('addDepartmentModal')).hide();
+            })
+            .catch(error => {
+                console.error(`Error ${method === 'POST' ? 'saving' : 'updating'} department:`, error);
+                showToast('Erreur', error.message, 'error');
+            });
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('addDepartmentModal').addEventListener('hidden.bs.modal', function () {
+            if (tableExists) {
+                document.getElementById('departmentForm').reset();
+                document.getElementById('departmentId').value = '0';
+                document.getElementById('addDepartmentModalLabel').textContent = 'Gestion Département';
+                document.getElementById('saveDepartmentBtn').textContent = 'Enregistrer';
+            }
+        });
+
+        // Fonction pour filtrer les départements
+        function filterDepartments() {
+            const searchInput = document.getElementById('searchInput').value.trim();
+
+            // Charger les départements avec la recherche
+            let url = '/api/departments';
+            if (searchInput) {
+                url += `?search=${encodeURIComponent(searchInput)}`;
+            }
+
+            fetchWithAuth(url)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Erreur lors du chargement des départements filtrés');
+                    }
+                })
+                .then(data => {
+                    departments = data;
+                    renderDepartmentsTable();
+                })
+                .catch(error => {
+                    console.error('Error filtering departments:', error);
+                    showToast('Erreur lors du filtrage des départements', 'error');
+                });
+        }
+
+        // Fonction pour réinitialiser les filtres
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            loadDepartments(); // Charger tous les départements
+        }
+
+        // Load departments when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDepartments();
+
+            // Écouter les événements de recherche
+            document.getElementById('searchBtn').addEventListener('click', filterDepartments);
+            document.getElementById('searchInput').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    filterDepartments();
+                }
+            });
+            document.getElementById('resetFiltersBtn').addEventListener('click', resetFilters);
+        });
+
+    </script>
+}

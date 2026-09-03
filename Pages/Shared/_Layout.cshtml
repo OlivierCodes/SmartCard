@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Système de Distribution de Carburant</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/SmartCard.styles.css" asp-append-version="true" />
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <!-- Outfit font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Chart.js for dashboard charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="wrapper d-flex">
+        <!-- Side Navigation -->
+        <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-primary sidebar collapse">
+            <div class="position-sticky pt-3">
+                <div class="d-flex align-items-center mb-4 p-3">
+                    <i class="fas fa-gas-pump fa-2x text-white me-3"></i>
+                    <h5 class="text-white mb-0">SmartCard</h5>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center" asp-area="" asp-page="/Admin/Index">
+                            <i class="fas fa-home me-3"></i>
+                            <span>Accueil</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center" asp-area="" asp-page="/Employees/Index">
+                            <i class="fas fa-users me-3"></i>
+                            <span>Employés</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center" asp-area="" asp-page="/Departments/Index">
+                            <i class="fas fa-building me-3"></i>
+                            <span>Départements</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center" asp-area="" asp-page="/Cards/Index">
+                            <i class="fas fa-id-card me-3"></i>
+                            <span>Cartes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center" asp-area="" asp-page="/Roles/Index">
+                            <i class="fas fa-user-tag me-3"></i>
+                            <span>Rôles</span>
+                        </a>
+                    </li>
+
+                </ul>
+
+                
+            </div>
+        </nav>
+
+        <!-- Main content area -->
+        <div class="main-content flex-grow-1">
+            <!-- Top navigation bar -->
+            <header class="navbar navbar-expand navbar-dark bg-primary sticky-top shadow-sm">
+                <div class="container-fluid px-4">
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-outline-light me-3" type="button" id="sidebarToggle">
+                            <i class="fas fa-bars"></i>
+                        </button>
+
+                        <!-- Barre de recherche globale -->
+                        <div class="flex-grow-1 me-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control bg-light border-0 small" placeholder="Rechercher..." aria-label="Recherche" id="globalSearchInput">
+                                <button class="btn btn-primary" type="button" id="globalSearchBtn">
+                                    <i class="fas fa-search fa-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle fa-lg me-2"></i>
+                                <div class="d-flex flex-column">
+                                    <span id="userFullName">Chargement...</span>
+                                    <small class="text-white-50 text-xs" id="userEmail">Chargement...</small>
+                                </div>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Mon Profil</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Paramètres</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" asp-page="/Logout" asp-page-handler="Logout" class="d-inline">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </header>
+
+            <!-- Page content -->
+            <div class="container-fluid p-4">
+                <main role="main" class="pb-3">
+                    @RenderBody()
+                </main>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+        <div id="toastPlaceholder"></div>
+    </div>
+
+    <script>
+        // Function to add authorization header to fetch requests
+        function fetchWithAuth(url, options = {}) {
+            // Use Identity authentication cookies instead of JWT
+            const headers = {
+                ...options.headers
+            };
+
+            // Add content-type if it's not already specified and we're sending JSON
+            if (!headers['Content-Type'] && options.body && typeof options.body === 'string') {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            return fetch(url, {
+                ...options,
+                headers,
+                credentials: 'include'  // Include authentication cookies
+            });
+        }
+
+        // Charger les informations de l'utilisateur
+        function loadUserInfo() {
+            fetchWithAuth('/api/user/current')
+                .then(response => {
+                    // Nous ne devons pas rediriger ici car la page a déjà été chargée avec authentification
+                    if (response.ok) {
+                        return response.json();
+                    } else if (response.status === 401) {
+                        console.warn('User info API failed - authentication may be expired');
+                        // Même si l'API échoue, ne pas rediriger immédiatement
+                        const fullNameElement = document.getElementById('userFullName');
+                        const emailElement = document.getElementById('userEmail');
+                        if (fullNameElement) fullNameElement.textContent = 'Session expirée';
+                        if (emailElement) emailElement.textContent = 'Veuillez vous reconnecter';
+                        return null;
+                    } else {
+                        throw new Error('Erreur lors du chargement des informations utilisateur');
+                    }
+                })
+                .then(data => {
+                    if (data) {
+                        const fullNameElement = document.getElementById('userFullName');
+                        const emailElement = document.getElementById('userEmail');
+                        if (fullNameElement) fullNameElement.textContent = data.fullName || data.email;
+                        if (emailElement) emailElement.textContent = data.email;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur chargement info utilisateur:', error);
+                    // Ne pas rediriger automatiquement - juste afficher l'état d'erreur
+                    const fullNameElement = document.getElementById('userFullName');
+                    const emailElement = document.getElementById('userEmail');
+                    if (fullNameElement) fullNameElement.textContent = 'Erreur de chargement';
+                    if (emailElement) emailElement.textContent = 'Données indisponibles';
+                });
+        }
+
+        // Theme management
+        document.addEventListener('DOMContentLoaded', function() {
+            // Charger les informations de l'utilisateur, sauf sur la page de connexion
+            const currentPath = window.location.pathname;
+            if (currentPath !== '/Login' && currentPath !== '/Account/Login') {
+                loadUserInfo();  // Réactivé pour afficher les infos utilisateur
+            } else {
+                // Sur la page de connexion, afficher le message approprié
+                document.getElementById('userFullName').textContent = 'Veuillez vous connecter';
+                document.getElementById('userEmail').textContent = 'Page de connexion';
+            }
+
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            const body = document.body;
+
+            // Check for saved theme preference or respect OS preference
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+            // Set initial theme
+            if (savedTheme === 'dark' || (!savedTheme && prefersDarkScheme.matches)) {
+                body.setAttribute('data-bs-theme', 'dark');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+            } else {
+                body.setAttribute('data-bs-theme', 'light');
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+            }
+
+            // Toggle theme
+            themeToggle.addEventListener('click', function() {
+                if (body.getAttribute('data-bs-theme') === 'dark') {
+                    body.setAttribute('data-bs-theme', 'light');
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    body.setAttribute('data-bs-theme', 'dark');
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+
+        // Toast notification functions
+        function showToast(message, type = 'info', duration = 5000) {
+            const toastId = 'toast_' + Date.now();
+            const toastColor = type === 'success' ? 'text-bg-success' :
+                              type === 'error' ? 'text-bg-danger' :
+                              type === 'warning' ? 'text-bg-warning' : 'text-bg-info';
+
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center ${toastColor} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('toastPlaceholder').insertAdjacentHTML('afterbegin', toastHtml);
+
+            const toastElement = new bootstrap.Toast(document.getElementById(toastId), {
+                delay: duration
+            });
+
+            toastElement.show();
+
+            // Remove toast from DOM after it's hidden
+            document.getElementById(toastId).addEventListener('hidden.bs.toast', function() {
+                this.remove();
+            });
+        }
+
+        // Function to show success toast
+        function showSuccess(message) {
+            showToast(message, 'success');
+        }
+
+        // Function to show error toast
+        function showError(message) {
+            showToast(message, 'error');
+        }
+
+        // Function to show warning toast
+        function showWarning(message) {
+            showToast(message, 'warning');
+        }
+
+        // Function to show info toast
+        function showInfo(message) {
+            showToast(message, 'info');
+        }
+
+        // Fonction de recherche globale
+        function setupGlobalSearch() {
+            const searchInput = document.getElementById('globalSearchInput');
+            const searchButton = document.getElementById('globalSearchBtn');
+
+            if (searchInput && searchButton) {
+                // Recherche lors du clic sur le bouton de recherche
+                searchButton.addEventListener('click', function() {
+                    performSearch();
+                });
+
+                // Recherche lors de la pression sur Entrée
+                searchInput.addEventListener('keypress', function(event) {
+                    if (event.key === 'Enter') {
+                        performSearch();
+                    }
+                });
+
+                // Recherche dynamique après un délai (évite les requêtes trop fréquentes)
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        if (searchInput.value.trim().length > 2) {
+                            performSearch();
+                        }
+                    }, 500); // 500ms de délai après la dernière saisie
+                });
+            }
+        }
+
+        function performSearch() {
+            const searchInput = document.querySelector('input[aria-label="Recherche"]');
+            if (!searchInput) return;
+
+            const searchTerm = searchInput.value.trim();
+
+            if (searchTerm === '') {
+                showInfo('Veuillez entrer un terme de recherche');
+                return;
+            }
+
+            if (searchTerm.length < 3) {
+                showInfo('Veuillez entrer au moins 3 caractères');
+                return;
+            }
+
+            // Afficher un message de recherche en cours
+            showInfo(`Recherche en cours pour: "${searchTerm}"`);
+
+            // Ici, vous pouvez ajouter la logique pour rechercher dans différentes entités
+            // Pour l'instant, je vais juste rediriger vers une page de résultats de recherche
+            // Vous pouvez adapter cette logique selon vos besoins
+
+            // Pour l'exemple, je vais chercher dans les employés, départements et cartes
+            searchAcrossEntities(searchTerm);
+        }
+
+        function searchAcrossEntities(searchTerm) {
+            // Effectuer des appels API pour différents types d'entités
+            Promise.all([
+                searchEmployees(searchTerm),
+                searchDepartments(searchTerm),
+                searchCards(searchTerm)
+            ]).then(results => {
+                const [employees, departments, cards] = results;
+
+                // Afficher les résultats dans une modal ou une page dédiée
+                displaySearchResults(searchTerm, employees, departments, cards);
+            }).catch(error => {
+                console.error('Erreur lors de la recherche:', error);
+                showError('Erreur lors de la recherche');
+            });
+        }
+
+        function searchEmployees(searchTerm) {
+            return fetchWithAuth(`/api/employees?search=${encodeURIComponent(searchTerm)}`)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    return [];
+                })
+                .catch(() => []);
+        }
+
+        function searchDepartments(searchTerm) {
+            return fetchWithAuth(`/api/departments?search=${encodeURIComponent(searchTerm)}`)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    return [];
+                })
+                .catch(() => []);
+        }
+
+        function searchCards(searchTerm) {
+            return fetchWithAuth(`/api/cards?search=${encodeURIComponent(searchTerm)}`)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    return [];
+                })
+                .catch(() => []);
+        }
+
+        function displaySearchResults(searchTerm, employees, departments, cards) {
+            // Créer une modal pour afficher les résultats
+            const resultsModal = document.getElementById('searchResultsModal');
+            if (!resultsModal) {
+                createSearchResultsModal();
+            }
+
+            // Mettre à jour le contenu de la modal
+            updateSearchResultsContent(searchTerm, employees, departments, cards);
+
+            // Afficher la modal
+            const modal = new bootstrap.Modal(document.getElementById('searchResultsModal'));
+            modal.show();
+        }
+
+        function createSearchResultsModal() {
+            const modalHtml = `
+                <div class="modal fade" id="searchResultsModal" tabindex="-1" aria-labelledby="searchResultsModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="searchResultsModalLabel">Résultats de recherche</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="search-results-container">
+                                    <div id="searchResultsContent">
+                                        <p class="text-center text-muted">Chargement des résultats...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function updateSearchResultsContent(searchTerm, employees, departments, cards) {
+            const contentDiv = document.getElementById('searchResultsContent');
+            if (!contentDiv) return;
+
+            let html = `<h6>Résultats pour: "${searchTerm}"</h6>`;
+
+            // Afficher les résultats des employés
+            if (employees && employees.length > 0) {
+                html += `<h6 class="mt-3">Employés (${employees.length})</h6><ul class="list-group">`;
+                employees.slice(0, 5).forEach(emp => {
+                    html += `<li class="list-group-item">
+                        <a href="/Employees">${emp.firstName} ${emp.lastName} (${emp.employeeNumber})</a>
+                    </li>`;
+                });
+
+                if (employees.length > 5) {
+                    html += `<li class="list-group-item text-center">
+                        <small class="text-muted">+${employees.length - 5} autres résultats</small>
+                    </li>`;
+                }
+
+                html += '</ul>';
+            } else {
+                html += `<h6 class="mt-3">Employés</h6><p class="text-muted">Aucun employé trouvé</p>`;
+            }
+
+            // Afficher les résultats des départements
+            if (departments && departments.length > 0) {
+                html += `<h6 class="mt-3">Départements (${departments.length})</h6><ul class="list-group">`;
+                departments.slice(0, 5).forEach(dept => {
+                    html += `<li class="list-group-item">
+                        <a href="/Departments">${dept.name}</a>
+                    </li>`;
+                });
+
+                if (departments.length > 5) {
+                    html += `<li class="list-group-item text-center">
+                        <small class="text-muted">+${departments.length - 5} autres résultats</small>
+                    </li>`;
+                }
+
+                html += '</ul>';
+            } else {
+                html += `<h6 class="mt-3">Départements</h6><p class="text-muted">Aucun département trouvé</p>`;
+            }
+
+            // Afficher les résultats des cartes
+            if (cards && cards.length > 0) {
+                html += `<h6 class="mt-3">Cartes (${cards.length})</h6><ul class="list-group">`;
+                cards.slice(0, 5).forEach(card => {
+                    html += `<li class="list-group-item">
+                        <a href="/Cards">${card.cardNumber} (${card.status})</a>
+                    </li>`;
+                });
+
+                if (cards.length > 5) {
+                    html += `<li class="list-group-item text-center">
+                        <small class="text-muted">+${cards.length - 5} autres résultats</small>
+                    </li>`;
+                }
+
+                html += '</ul>';
+            } else {
+                html += `<h6 class="mt-3">Cartes</h6><p class="text-muted">Aucune carte trouvée</p>`;
+            }
+
+            contentDiv.innerHTML = html;
+        }
+
+        // Fonction pour gérer le sidenav (ouvrir/fermer)
+        function setupSidebarToggle() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function() {
+                    // Ajouter une classe au wrapper pour basculer l'état du sidenav
+                    const wrapper = document.querySelector('.wrapper');
+                    if (wrapper) {
+                        // Basculer la classe pour ouvrir/fermer le sidenav
+                        wrapper.classList.toggle('sidenav-collapsed');
+
+                        // Pour les écrans mobiles, basculer le collapse traditionnel
+                        if (window.innerWidth < 768) {
+                            sidebar.classList.toggle('show');
+                        }
+                    }
+                });
+            }
+        }
+
+        // Initialiser la recherche globale quand le DOM est chargé
+        document.addEventListener('DOMContentLoaded', function() {
+            setupGlobalSearch();
+            setupSidebarToggle();
+            // Charger les informations de l'utilisateur, sauf sur la page de connexion
+            const currentPath = window.location.pathname;
+            if (currentPath !== '/Login' && currentPath !== '/Account/Login') {
+                loadUserInfo();  // Réactivé pour afficher les infos utilisateur
+            } else {
+                // Sur la page de connexion, afficher le message approprié
+                document.getElementById('userFullName').textContent = 'Veuillez vous connecter';
+                document.getElementById('userEmail').textContent = 'Page de connexion';
+            }
+        });
+    </script>
+
+    <style>
+        /* Effet de transition pour le sidenav */
+        #sidebar {
+            transition: all 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        .main-content {
+            transition: all 0.3s ease;
+        }
+
+        .sidenav-collapsed .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+
+        /* Sur les écrans plus larges, ajuster le sidenav quand il est fermé */
+        @@media (min-width: 768px) {
+            .sidenav-collapsed #sidebar {
+                width: 0 !important;
+                min-width: 0;
+                max-width: 0;
+                overflow: hidden;
+                transform: translateX(-100%);
+            }
+
+            .sidenav-collapsed:not(.show) #sidebar {
+                opacity: 0;
+            }
+
+            .sidenav-collapsed.show #sidebar {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            .sidenav-collapsed .main-content {
+                flex: 1 1 auto !important;
+                margin-left: 0 !important;
+            }
+        }
+
+        /* Sur mobile, le sidenav est géré par Bootstrap collapse */
+        @@media (max-width: 767px) {
+            #sidebar.show {
+                transform: translateX(0) !important;
+            }
+        }
+    </style>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

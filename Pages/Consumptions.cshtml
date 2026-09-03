@@ -1,0 +1,232 @@
+@page
+@model ConsumptionsModel
+@{
+    ViewData["Title"] = "Historique des Consommations";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Historique des Consommations de Carburant</h1>
+    <button type="button" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+        <i class="fas fa-download fa-sm text-white-50 me-1"></i> Exporter
+    </button>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Filtres de Recherche</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="form-group">
+                            <label for="selectedEmployee">Employé</label>
+                            <select class="form-control" id="selectedEmployee">
+                                <option value="">Tous les employés</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="form-group">
+                            <label for="startDate">Date de Début</label>
+                            <input type="date" class="form-control" id="startDate">
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="form-group">
+                            <label for="endDate">Date de Fin</label>
+                            <input type="date" class="form-control" id="endDate">
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4 d-flex align-items-end">
+                        <button type="button" class="btn btn-primary btn-block" id="loadConsumptionsBtn">
+                            <i class="fas fa-search me-1"></i>Rechercher
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Historique des Consommations</h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink3" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink3">
+                        <div class="dropdown-header">Options:</div>
+                        <a class="dropdown-item" href="#">Exporter</a>
+                        <a class="dropdown-item" href="#">Imprimer</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item text-danger" href="#">Supprimer</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="consumptionsTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Employé</th>
+                                <th>Numéro de Carte</th>
+                                <th>Quantité (L)</th>
+                                <th>Date de Transaction</th>
+                                <th>Heure</th>
+                                <th>Description</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded via API -->
+                            <tr>
+                                <td colspan="7" class="text-center">Sélectionnez un critère et cliquez sur rechercher</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Function to add authorization header to fetch requests
+        function fetchWithAuth(url, options = {}) {
+            // Use Identity authentication cookies instead of JWT
+            const headers = {
+                ...options.headers
+            };
+
+            // Add content-type if it's not already specified and we're sending JSON
+            if (!headers['Content-Type'] && options.body && typeof options.body === 'string') {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            return fetch(url, {
+                ...options,
+                headers,
+                credentials: 'include'  // Include authentication cookies
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    // Unauthorized - redirect to login
+                    window.location.href = '/Login';
+                }
+                return response;
+            });
+        }
+
+        let consumptions = [];
+        let employees = [];
+
+        function loadEmployees() {
+            fetchWithAuth('/api/employees')
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Erreur lors du chargement des employés');
+                    }
+                })
+                .then(data => {
+                    employees = data;
+                    const select = document.getElementById('selectedEmployee');
+                    select.innerHTML = '<option value="">Tous les employés</option>';
+                    employees.forEach(employee => {
+                        const option = document.createElement('option');
+                        option.value = employee.id;
+                        option.textContent = `${employee.firstName} ${employee.lastName} (${employee.employeeNumber})`;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading employees:', error);
+                    showError('Erreur lors du chargement des employés');
+                });
+        }
+
+        function loadConsumptions() {
+            const employeeId = document.getElementById('selectedEmployee').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            let url = '/api/consumptions';
+            const params = new URLSearchParams();
+
+            if (employeeId) params.append('employeeId', employeeId);
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
+
+            url += '?' + params.toString();
+
+            fetchWithAuth(url)
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Erreur lors du chargement des consommations');
+                    }
+                })
+                .then(data => {
+                    consumptions = data;
+                    renderConsumptionsTable();
+                })
+                .catch(error => {
+                    console.error('Error loading consumptions:', error);
+                    showError('Erreur lors du chargement des consommations');
+                });
+        }
+
+        function renderConsumptionsTable() {
+            const tbody = document.querySelector('#consumptionsTable tbody');
+            tbody.innerHTML = '';
+
+            consumptions.forEach(consumption => {
+                const employee = employees.find(emp => emp.id === consumption.employeeId) || {};
+                const transactionDate = new Date(consumption.transactionDate);
+                const status = consumption.amountInLiters > 50 ? 'Critique' : 'Normal';
+                const statusClass = consumption.amountInLiters > 50 ? 'bg-danger' : 'bg-success';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${employee.firstName || ''} ${employee.lastName || ''}</td>
+                    <td>${consumption.cardId}</td>
+                    <td>${consumption.amountInLiters}</td>
+                    <td>${transactionDate.toLocaleDateString()}</td>
+                    <td>${transactionDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                    <td>${consumption.description || ''}</td>
+                    <td><span class="badge ${statusClass}">${status}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        document.getElementById('loadConsumptionsBtn').addEventListener('click', loadConsumptions);
+
+        // Load employees when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEmployees();
+
+            // Set default dates
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            document.getElementById('startDate').valueAsDate = firstDay;
+            document.getElementById('endDate').valueAsDate = today;
+        });
+    </script>
+}

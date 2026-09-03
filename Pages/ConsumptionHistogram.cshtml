@@ -1,0 +1,562 @@
+@page
+@model ConsumptionHistogramModel
+@{
+    ViewData["Title"] = "Histogramme de Consommation";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Histogramme de Consommation par Période</h1>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Filtres de Recherche</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="form-group">
+                            <label for="selectedEmployee">Employé</label>
+                            <select class="form-control" id="selectedEmployee">
+                                <option value="">Utiliser données d'exemple</option>
+                                <option value="0">Tous les employés</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="form-group">
+                            <label for="startDate">Date de Début</label>
+                            <input type="date" class="form-control" id="startDate">
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="form-group">
+                            <label for="endDate">Date de Fin</label>
+                            <input type="date" class="form-control" id="endDate">
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="form-group">
+                            <label for="groupBy">Grouper par</label>
+                            <select class="form-control" id="groupBy">
+                                <option value="day">Jour</option>
+                                <option value="week">Semaine</option>
+                                <option value="month">Mois</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <button type="button" class="btn btn-primary" id="loadHistogramBtn">
+                            <i class="fas fa-chart-bar me-1"></i> Générer l'histogramme
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Consommation Totale</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalConsumption">0 L</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-gas-pump fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Consommation Moyenne</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="averageConsumption">0 L</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Périodes</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalPeriods">0</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Données chargées</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="dataCount">0</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-database fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Histogramme de Consommation</h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                        <div class="dropdown-header">Options:</div>
+                        <a class="dropdown-item" href="#" id="exportChartBtn">Exporter en PNG</a>
+                        <a class="dropdown-item" href="#" id="exportDataBtn">Exporter données</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height:400px;">
+                    <canvas id="consumptionHistogram"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        let consumptionData = [];
+
+        // Sample static data for consumption by period
+        function getStaticConsumptionData() {
+            const groupBy = document.getElementById('groupBy').value;
+
+            if (groupBy === 'week') {
+                // Sample weekly data
+                return [
+                    { period: '2024-W45', totalConsumption: 245.6, count: 12 },
+                    { period: '2024-W46', totalConsumption: 320.8, count: 15 },
+                    { period: '2024-W47', totalConsumption: 280.3, count: 14 },
+                    { period: '2024-W48', totalConsumption: 350.2, count: 18 },
+                    { period: '2024-W49', totalConsumption: 295.7, count: 16 }
+                ];
+            } else if (groupBy === 'month') {
+                // Sample monthly data
+                return [
+                    { period: '2024-10', totalConsumption: 1250.4, count: 52 },
+                    { period: '2024-11', totalConsumption: 1480.7, count: 64 },
+                    { period: '2024-12', totalConsumption: 1100.3, count: 48 }
+                ];
+            } else {
+                // Default to daily data
+                // Create last 7 days of sample data
+                const data = [];
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+                    const consumption = 50 + Math.floor(Math.random() * 100); // Random consumption between 50-150
+                    data.push({
+                        period: dateStr,
+                        totalConsumption: consumption,
+                        count: Math.floor(Math.random() * 5) + 1 // Random transaction count
+                    });
+                }
+                return data;
+            }
+        }
+
+        function loadHistogramData() {
+            // For demo purposes, use static data
+            // In a real application, we would use API data when an employee is selected
+            const employeeId = document.getElementById('selectedEmployee').value;
+
+            if (!employeeId) {
+                // Show static sample data when no employee is selected
+                consumptionData = getStaticConsumptionData();
+                renderHistogram();
+                renderStatistics();
+            } else {
+                // Load actual data from API when employee is selected
+                if (employeeId === '0') {
+                    // Load data for all employees
+                    loadHistogramDataForAllEmployees();
+                } else {
+                    // Load data for specific employee
+                    loadHistogramDataFromAPI(employeeId);
+                }
+            }
+        }
+
+        // Function to add authorization header to fetch requests
+        function fetchWithAuth(url, options = {}) {
+            // Use Identity authentication cookies instead of JWT
+            const headers = {
+                ...options.headers
+            };
+
+            // Add content-type if it's not already specified and we're sending JSON
+            if (!headers['Content-Type'] && options.body && typeof options.body === 'string') {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            return fetch(url, {
+                ...options,
+                headers,
+                credentials: 'include'  // Include authentication cookies
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    // Unauthorized - redirect to login
+                    window.location.href = '/Login';
+                }
+                return response;
+            });
+        }
+
+        function loadHistogramDataFromAPI(employeeId) {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const groupBy = document.getElementById('groupBy').value;
+
+            if (!startDate || !endDate) {
+                alert('Veuillez sélectionner une période');
+                return;
+            }
+
+            const url = `/api/consumptions/employee/${employeeId}/grouped-period?startDate=${startDate}&endDate=${endDate}&groupBy=${groupBy}`;
+
+            fetchWithAuth(url)
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Erreur lors du chargement des données d\'histogramme');
+                    }
+                })
+                .then(data => {
+                    consumptionData = data;
+                    renderHistogram();
+                    renderStatistics();
+                })
+                .catch(error => {
+                    console.error('Error loading histogram data from API:', error);
+                    showError('Erreur lors du chargement des données d\'histogramme');
+                    // Fallback to static data if API fails
+                    consumptionData = getStaticConsumptionData();
+                    renderHistogram();
+                    renderStatistics();
+                });
+        }
+
+        function loadHistogramDataForAllEmployees() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const groupBy = document.getElementById('groupBy').value;
+
+            if (!startDate || !endDate) {
+                alert('Veuillez sélectionner une période');
+                return;
+            }
+
+            const url = `/api/consumptions/all-employees/grouped-period?startDate=${startDate}&endDate=${endDate}&groupBy=${groupBy}`;
+
+            fetchWithAuth(url)
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Erreur lors du chargement des données d\'histogramme pour tous les employés');
+                    }
+                })
+                .then(data => {
+                    consumptionData = data;
+                    renderHistogram();
+                    renderStatistics();
+                })
+                .catch(error => {
+                    console.error('Error loading histogram data for all employees:', error);
+                    showError('Erreur lors du chargement des données d\'histogramme pour tous les employés');
+                    // Fallback to static data if API fails
+                    consumptionData = getStaticConsumptionData();
+                    renderHistogram();
+                    renderStatistics();
+                });
+        }
+
+        function renderHistogram() {
+            const ctx = document.getElementById('consumptionHistogram').getContext('2d');
+
+            // Destroy existing chart if it exists
+            if (window.consumptionChart) {
+                window.consumptionChart.destroy();
+            }
+
+            const labels = consumptionData.map(item => formatPeriodLabel(item.period, document.getElementById('groupBy').value));
+            const data = consumptionData.map(item => item.totalConsumption);
+
+            window.consumptionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Consommation (L)',
+                        data: data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Consommation (L)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Période'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y} L`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function formatPeriodLabel(period, groupBy) {
+            switch(groupBy) {
+                case 'week':
+                    // Convert YYYY-W## format to a more readable format
+                    const weekMatch = period.match(/(\d{4})-W(\d{2})/);
+                    if (weekMatch) {
+                        return `Semaine ${weekMatch[2]} ${weekMatch[1]}`;
+                    }
+                    return period;
+                case 'month':
+                    // Convert YYYY-MM format to month name
+                    const monthMatch = period.match(/(\d{4})-(\d{2})/);
+                    if (monthMatch) {
+                        const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
+                                       'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+                        const year = monthMatch[1];
+                        const month = months[parseInt(monthMatch[2]) - 1];
+                        return `${month} ${year}`;
+                    }
+                    return period;
+                default: // day
+                    // Convert YYYY-MM-DD to a more readable format
+                    const date = new Date(period);
+                    if (!isNaN(date.getTime())) {
+                        return date.toLocaleDateString('fr-FR');
+                    }
+                    return period;
+            }
+        }
+
+        function renderStatistics() {
+            if (consumptionData.length === 0) {
+                document.getElementById('totalConsumption').textContent = '0 L';
+                document.getElementById('averageConsumption').textContent = '0 L';
+                document.getElementById('totalPeriods').textContent = '0';
+                document.getElementById('dataCount').textContent = '0';
+                return;
+            }
+
+            const total = consumptionData.reduce((sum, item) => sum + item.totalConsumption, 0);
+            const average = total / consumptionData.length;
+            const periods = consumptionData.length;
+
+            document.getElementById('totalConsumption').textContent = total.toFixed(2) + ' L';
+            document.getElementById('averageConsumption').textContent = average.toFixed(2) + ' L';
+            document.getElementById('totalPeriods').textContent = periods;
+            document.getElementById('dataCount').textContent = consumptionData.length;
+        }
+
+        function exportChartAsPng() {
+            if (window.consumptionChart) {
+                const url = window.consumptionChart.toBase64Image();
+                const link = document.createElement('a');
+                link.download = 'histogramme-consommation.png';
+                link.href = url;
+                link.click();
+            }
+        }
+
+        function exportData() {
+            if (consumptionData.length === 0) {
+                alert('Aucune donnée à exporter');
+                return;
+            }
+
+            let csvContent = 'Période,Consommation Totale,Nombre de Transactions\n';
+            consumptionData.forEach(item => {
+                csvContent += `"${item.period}",${item.totalConsumption},${item.count}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'donnees-histogramme.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        let employees = [];
+
+        function loadEmployees() {
+            fetchWithAuth('/api/employees')
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Erreur lors du chargement des employés');
+                    }
+                })
+                .then(data => {
+                    employees = data;
+                    const select = document.getElementById('selectedEmployee');
+                    select.innerHTML = '<option value="">Utiliser données d\'exemple</option>';
+                    // Ajouter l'option pour tous les employés
+                    const allOption = document.createElement('option');
+                    allOption.value = '0';
+                    allOption.textContent = 'Tous les employés';
+                    select.appendChild(allOption);
+
+                    employees.forEach(employee => {
+                        const option = document.createElement('option');
+                        option.value = employee.id;
+                        option.textContent = `${employee.firstName} ${employee.lastName} (${employee.employeeNumber})`;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading employees:', error);
+                    showError('Erreur lors du chargement des employés');
+                });
+        }
+
+        // Fonction pour afficher une erreur (similaire à ce qui est fait dans les autres pages)
+        function showError(message) {
+            // Crée un toast dynamiquement si nécessaire
+            let toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '1100';
+                document.body.appendChild(toastContainer);
+            }
+
+            const toastElement = document.createElement('div');
+            toastElement.className = 'toast';
+            toastElement.setAttribute('role', 'alert');
+            toastElement.setAttribute('aria-live', 'assertive');
+            toastElement.setAttribute('aria-atomic', 'true');
+
+            toastElement.innerHTML = `
+                <div class="toast-header bg-danger text-white">
+                    <strong class="me-auto">Erreur</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    ${message}
+                </div>
+            `;
+
+            toastContainer.appendChild(toastElement);
+
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+
+            // Supprimer le toast après affichage
+            toastElement.addEventListener('hidden.bs.toast', function() {
+                toastElement.remove();
+            });
+        }
+
+        document.getElementById('loadHistogramBtn').addEventListener('click', loadHistogramData);
+
+        // Initialize chart with default data and load employees on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEmployees();
+
+            // Set default dates (last 7 days for daily view)
+            const today = new Date();
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(today.getDate() - 6);
+            document.getElementById('startDate').valueAsDate = sevenDaysAgo;
+            document.getElementById('endDate').valueAsDate = today;
+
+            // Load initial static data
+            loadHistogramData();
+        });
+
+        document.getElementById('exportChartBtn').addEventListener('click', exportChartAsPng);
+        document.getElementById('exportDataBtn').addEventListener('click', exportData);
+    </script>
+}

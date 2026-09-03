@@ -1,0 +1,649 @@
+@page
+@{
+    ViewData["Title"] = "Gestion des Cartes";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Gestion des Cartes</h1>
+    <button type="button" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addCardModal">
+        <i class="fas fa-plus fa-sm text-white-50 me-1"></i> Ajouter Carte
+    </button>
+</div>
+
+<!-- Filtres de recherche -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="form-group">
+            <label for="searchInput">Rechercher</label>
+            <input type="text" class="form-control" id="searchInput" placeholder="Numéro de carte, employé...">
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="form-group">
+            <label for="statusFilter">Statut</label>
+            <select class="form-control" id="statusFilter">
+                <option value="">Tous les statuts</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Suspended">Suspendue</option>
+                <option value="Lost">Perdue</option>
+            </select>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="form-group">
+            <label for="employeeFilter">Employé Associé</label>
+            <select class="form-control" id="employeeFilter">
+                <option value="">Tous les employés</option>
+            </select>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4 d-flex align-items-end">
+        <button type="button" class="btn btn-primary me-2" id="searchBtn">
+            <i class="fas fa-search me-1"></i>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn">
+            <i class="fas fa-sync-alt me-1"></i>Réinitialiser
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Liste des Cartes</h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                        <div class="dropdown-header">Options:</div>
+                        <a class="dropdown-item" href="#">Exporter</a>
+                        <a class="dropdown-item" href="#">Imprimer</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item text-danger" href="#">Supprimer</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="cardsTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Numéro de Carte</th>
+                                <th>Statut</th>
+                                <th>Employé Associé</th>
+                                <th>Date de Création</th>
+                                <th>Dernière Utilisation</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded via API -->
+                            <tr>
+                                <td colspan="6" class="text-center">Chargement des données...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Card Modal -->
+<div class="modal fade" id="addCardModal" tabindex="-1" aria-labelledby="addCardModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addCardModalLabel">Gestion Carte</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <form id="cardForm">
+                    <input type="hidden" id="cardId" value="0" />
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="cardNumber" class="form-label">Numéro de Carte</label>
+                                <input type="text" class="form-control" id="cardNumber" required>
+                                <div class="form-text">Numéro unique de la carte</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="cardStatus" class="form-label">Statut</label>
+                                <select class="form-control" id="cardStatus" required>
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                    <option value="Suspended">Suspendue</option>
+                                    <option value="Lost">Perdue</option>
+                                </select>
+                                <div class="form-text">Statut de la carte</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="employeeId" class="form-label">Employé Associé</label>
+                        <select class="form-control" id="employeeId">
+                            <option value="">Aucun employé</option>
+                        </select>
+                        <div class="form-text">Employé auquel attribuer la carte</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="saveCardBtn">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Include SignalR JavaScript library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        let cards = [];
+
+        // Function to add authorization header to fetch requests
+        function fetchWithAuth(url, options = {}) {
+            // Use Identity authentication cookies instead of JWT
+            const headers = {
+                ...options.headers
+            };
+
+            // Add content-type if it's not already specified and we're sending JSON
+            if (!headers['Content-Type'] && options.body && typeof options.body === 'string') {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            return fetch(url, {
+                ...options,
+                headers,
+                credentials: 'include'  // Include authentication cookies
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    // Unauthorized - redirect to login
+                    window.location.href = '/Login';
+                }
+                return response;
+            });
+        }
+
+        // Fonction pour afficher un toast
+        function showToast(title, message, type = 'info') {
+            // Crée un toast dynamiquement si nécessaire
+            let toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '1100';
+                document.body.appendChild(toastContainer);
+            }
+
+            const toastElement = document.createElement('div');
+            toastElement.className = 'toast';
+            toastElement.setAttribute('role', 'alert');
+            toastElement.setAttribute('aria-live', 'assertive');
+            toastElement.setAttribute('aria-atomic', 'true');
+
+            toastElement.innerHTML = `
+                <div class="toast-header">
+                    <strong class="me-auto">${title}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    ${message}
+                </div>
+            `;
+
+            toastContainer.appendChild(toastElement);
+
+            // Appliquer la couleur en fonction du type
+            const toastHeader = toastElement.querySelector('.toast-header');
+            if (type === 'success') {
+                toastHeader.classList.add('text-success');
+            } else if (type === 'error') {
+                toastHeader.classList.add('text-danger');
+            } else if (type === 'warning') {
+                toastHeader.classList.add('text-warning');
+            }
+
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+
+            // Supprimer le toast après affichage
+            toastElement.addEventListener('hidden.bs.toast', function() {
+                toastElement.remove();
+            });
+        }
+
+        // Fonction pour afficher une modal de confirmation
+        function showConfirmationModal(title, message, confirmCallback) {
+            // Créer la modal dynamiquement si elle n'existe pas
+            let modal = document.getElementById('confirmationModal');
+            if (!modal) {
+                const modalHtml = `
+                    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="confirmationModalLabel">Confirmation</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p id="confirmationMessage">${message}</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirmer</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                modal = document.getElementById('confirmationModal');
+
+                // Ajouter l'événement de confirmation
+                document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+                    // Exécuter directement la fonction de callback
+                    if (typeof confirmCallback === 'function') {
+                        confirmCallback();
+                    }
+                    bootstrap.Modal.getInstance(modal).hide();
+                });
+            }
+
+            // Mettre à jour le message
+            document.getElementById('confirmationMessage').textContent = message;
+
+            // Afficher la modal
+            const confirmationModal = new bootstrap.Modal(modal);
+            confirmationModal.show();
+        }
+
+        function loadCards() {
+            fetchWithAuth('/api/cards')
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    cards = data;
+                    renderCardsTable();
+                })
+                .catch(error => console.error('Error loading cards:', error));
+        }
+
+        function renderCardsTable() {
+            const tbody = document.querySelector('#cardsTable tbody');
+            tbody.innerHTML = '';
+
+            if (cards.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucune carte trouvée</td></tr>';
+                return;
+            }
+
+            cards.forEach(card => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${card.cardNumber}</td>
+                    <td>
+                        <span class="badge bg-${getStatusColor(card.status)}">${card.status}</span>
+                    </td>
+                    <td>${card.employee ? card.employee.firstName + ' ' + card.employee.lastName : 'Aucun'}</td>
+                    <td>${new Date(card.createdDate).toLocaleDateString()}</td>
+                    <td>${card.lastUsedDate ? new Date(card.lastUsedDate).toLocaleDateString() : 'Jamais'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editCard(${card.id})" title="Modifier"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-info" onclick="assignEmployeeToCard(${card.id})" title="Attribuer à un employé"><i class="fas fa-user-plus"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCard(${card.id})" title="Supprimer"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function getStatusColor(status) {
+            switch(status.toLowerCase()) {
+                case 'active': return 'success';
+                case 'inactive': return 'secondary';
+                case 'suspended': return 'warning';
+                case 'lost': return 'danger';
+                default: return 'secondary';
+            }
+        }
+
+        function editCard(id) {
+            const card = cards.find(c => c.id === id);
+            if (card) {
+                document.getElementById('cardId').value = card.id;
+                document.getElementById('cardNumber').value = card.cardNumber;
+                document.getElementById('cardStatus').value = card.status;
+                document.getElementById('employeeId').value = card.employeeId || '';
+
+                document.getElementById('addCardModalLabel').textContent = 'Modifier Carte';
+                document.getElementById('saveCardBtn').textContent = 'Mettre à Jour';
+                const modal = new bootstrap.Modal(document.getElementById('addCardModal'));
+                modal.show();
+            }
+        }
+
+        function assignEmployeeToCard(cardId) {
+            // Afficher une modal pour attribuer un employé à la carte
+            const card = cards.find(c => c.id === cardId);
+            if (card) {
+                document.getElementById('cardId').value = card.id;
+                document.getElementById('cardNumber').value = card.cardNumber;
+                document.getElementById('cardStatus').value = card.status;
+                document.getElementById('employeeId').value = card.employeeId || '';
+
+                document.getElementById('cardNumber').disabled = true; // Désactiver le numéro de carte
+                document.getElementById('cardStatus').disabled = true; // Désactiver le statut
+
+                document.getElementById('addCardModalLabel').textContent = 'Attribuer un Employé à la Carte';
+                document.getElementById('saveCardBtn').textContent = 'Attribuer';
+                const modal = new bootstrap.Modal(document.getElementById('addCardModal'));
+                modal.show();
+            }
+        }
+
+        function deleteCard(id) {
+            showConfirmationModal('Confirmation', 'Êtes-vous sûr de vouloir supprimer cette carte ?', function() {
+                fetchWithAuth(`/api/cards/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    if (response.ok) {
+                        loadCards();
+                        showToast('Succès', 'Carte supprimée avec succès', 'success');
+                    } else {
+                        showToast('Erreur', 'Erreur lors de la suppression de la carte', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting card:', error);
+                    showToast('Erreur', 'Erreur lors de la suppression de la carte', 'error');
+                });
+            });
+        }
+
+        // Load employees to populate the dropdown
+        function loadEmployeesForDropdown() {
+            fetchWithAuth('/api/employees')
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    return response.json();
+                })
+                .then(employees => {
+                    const employeeSelect = document.getElementById('employeeId');
+                    employeeSelect.innerHTML = '<option value="">Aucun employé</option>';
+
+                    employees.forEach(emp => {
+                        const option = document.createElement('option');
+                        option.value = emp.id;
+                        option.textContent = `${emp.firstName} ${emp.lastName} (${emp.employeeNumber})`;
+                        employeeSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading employees for dropdown:', error);
+                    const employeeSelect = document.getElementById('employeeId');
+                    employeeSelect.innerHTML = '<option value="">Erreur de chargement des employés</option>';
+                });
+        }
+
+        document.getElementById('saveCardBtn').addEventListener('click', function() {
+            const id = document.getElementById('cardId').value;
+            const cardNumber = document.getElementById('cardNumber').value;
+            // Assurons-nous que la valeur du statut est formatée correctement pour correspondre à l'enum
+            const cardStatusInput = document.getElementById('cardStatus').value;
+            // Convertir la première lettre en majuscule pour correspondre à l'enum
+            const cardStatus = cardStatusInput.charAt(0).toUpperCase() + cardStatusInput.slice(1).toLowerCase();
+            const employeeIdInput = document.getElementById('employeeId').value;
+            const employeeId = employeeIdInput && employeeIdInput !== '' ? parseInt(employeeIdInput) : null;
+
+            const isUpdate = id !== '0' && id !== 'undefined' && id !== '';
+            const isAssignment = document.getElementById('cardNumber').disabled; // Si le numéro est désactivé, c'est une attribution
+
+            // Si c'est une attribution, on appelle un endpoint spécial
+            if (isAssignment) {
+                // Appeler l'endpoint d'attribution employé-carte
+                const assignmentData = {
+                    cardId: parseInt(id),
+                    employeeId: employeeId
+                };
+
+                fetchWithAuth('/api/cards/assign-employee', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(assignmentData)
+                })
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Erreur lors de l\'attribution de la carte');
+                    }
+                })
+                .then(data => {
+                    loadCards();
+                    showToast('Succès', 'Carte attribuée avec succès', 'success');
+                    // Réinitialiser le formulaire
+                    document.getElementById('cardForm').reset();
+                    document.getElementById('cardId').value = '0';
+                    document.getElementById('cardNumber').disabled = false; // Réactiver
+                    document.getElementById('cardStatus').disabled = false; // Réactiver
+                    document.getElementById('addCardModalLabel').textContent = 'Gestion Carte';
+                    document.getElementById('saveCardBtn').textContent = 'Enregistrer';
+                    bootstrap.Modal.getInstance(document.getElementById('addCardModal')).hide();
+                })
+                .catch(error => {
+                    console.error('Error assigning employee to card:', error);
+                    showToast('Erreur', error.message, 'error');
+                });
+            } else {
+                // Sinon, c'est une opération CRUD normale
+                let cardData;
+                if (isUpdate) {
+                    cardData = {
+                        id: parseInt(id),
+                        cardNumber: cardNumber,
+                        status: cardStatus, // Envoi en majuscule pour correspondre à l'enum
+                        employeeId: employeeId
+                    };
+                } else {
+                    // Pour la création, on n'inclut pas l'id dans le corps
+                    cardData = {
+                        cardNumber: cardNumber,
+                        status: cardStatus, // Envoi en majuscule pour correspondre à l'enum
+                        employeeId: employeeId
+                    };
+                }
+
+                const url = isUpdate ? `/api/cards/${id}` : '/api/cards';
+                const method = isUpdate ? 'PUT' : 'POST';
+                const actionText = isUpdate ? 'mise à jour' : 'ajout';
+
+                console.log('Sending card data:', JSON.stringify(cardData, null, 2)); // Log détaillé
+                fetchWithAuth(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(cardData)
+                })
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        // Obtenir le message d'erreur du serveur
+                        return response.text().then(text => {
+                            let errorMessage = `Erreur lors de l'${actionText} de la carte`;
+                            let errorObj;
+                            try {
+                                errorObj = JSON.parse(text);
+                                if (errorObj.error) {
+                                    errorMessage = errorObj.error;
+                                    // Si des détails spécifiques sont fournis, les ajouter
+                                    if (errorObj.details) {
+                                        const fieldErrors = errorObj.details.map(detail =>
+                                            `${detail.Field}: ${detail.Errors.join(', ')}`
+                                        ).join('; ');
+                                        errorMessage = `${errorObj.error}. Détails: ${fieldErrors}`;
+                                    }
+                                } else if (errorObj.title) {
+                                    errorMessage = errorObj.title;
+                                }
+                            } catch (e) {
+                                // Si ce n'est pas un JSON valide, utiliser le texte brut
+                                if (text && text.length > 0) {
+                                    errorMessage = text;
+                                }
+                            }
+                            console.error('Server error details:', errorObj || text); // Log des détails
+                            throw new Error(errorMessage);
+                        });
+                    }
+                })
+                .then(data => {
+                    loadCards();
+                    showToast('Succès', `Carte ${actionText} avec succès`, 'success');
+                    // Réinitialiser le formulaire
+                    document.getElementById('cardForm').reset();
+                    document.getElementById('cardId').value = '0';
+                    document.getElementById('cardNumber').disabled = false; // Réactiver
+                    document.getElementById('cardStatus').disabled = false; // Réactiver
+                    document.getElementById('addCardModalLabel').textContent = 'Gestion Carte';
+                    document.getElementById('saveCardBtn').textContent = 'Enregistrer';
+                    bootstrap.Modal.getInstance(document.getElementById('addCardModal')).hide();
+                })
+                .catch(error => {
+                    console.error(`Error ${method === 'POST' ? 'saving' : 'updating'} card:`, error);
+                    showToast('Erreur', error.message, 'error');
+                });
+            }
+        });
+
+        // Fonction pour charger les employés dans le filtre
+        function loadEmployeesForFilter() {
+            fetchWithAuth('/api/employees')
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/Login';
+                        return;
+                    }
+                    return response.json();
+                })
+                .then(employees => {
+                    const employeeSelect = document.getElementById('employeeFilter');
+                    employeeSelect.innerHTML = '<option value="">Tous les employés</option>';
+
+                    employees.forEach(emp => {
+                        const option = document.createElement('option');
+                        option.value = emp.id;
+                        option.textContent = `${emp.firstName} ${emp.lastName} (${emp.employeeNumber})`;
+                        employeeSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading employees for filter:', error);
+                });
+        }
+
+        // Fonction pour filtrer les cartes
+        function filterCards() {
+            const searchInput = document.getElementById('searchInput').value.trim();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const employeeFilter = document.getElementById('employeeFilter').value;
+
+            // Charger les cartes avec les filtres
+            let url = '/api/cards';
+            const params = new URLSearchParams();
+
+            if (searchInput) params.append('search', searchInput);
+            if (statusFilter) params.append('status', statusFilter);
+            if (employeeFilter) params.append('employeeId', employeeFilter);
+
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+
+            fetchWithAuth(url)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Erreur lors du chargement des cartes filtrées');
+                    }
+                })
+                .then(data => {
+                    cards = data;
+                    renderCardsTable();
+                })
+                .catch(error => {
+                    console.error('Error filtering cards:', error);
+                    showToast(`Erreur lors du filtrage des cartes`, 'error');
+                });
+        }
+
+        // Fonction pour réinitialiser les filtres
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('employeeFilter').value = '';
+            loadCards(); // Charger toutes les cartes
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('addCardModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('cardForm').reset();
+            document.getElementById('cardId').value = '0';
+            document.getElementById('cardNumber').disabled = false; // Réactiver
+            document.getElementById('cardStatus').disabled = false; // Réactiver
+            document.getElementById('addCardModalLabel').textContent = 'Gestion Carte';
+            document.getElementById('saveCardBtn').textContent = 'Enregistrer';
+        });
+
+        // Load employees and cards when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEmployeesForDropdown();
+            loadEmployeesForFilter(); // Charger les employés pour le filtre
+            loadCards();
+
+            // Écouter les événements de recherche
+            document.getElementById('searchBtn').addEventListener('click', filterCards);
+            document.getElementById('searchInput').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    filterCards();
+                }
+            });
+            document.getElementById('resetFiltersBtn').addEventListener('click', resetFilters);
+        });
+    </script>
+}

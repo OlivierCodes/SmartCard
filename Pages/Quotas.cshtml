@@ -1,0 +1,360 @@
+@page
+@model QuotasModel
+@{
+    ViewData["Title"] = "Gestion des Quotas";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Gestion des Quotas de Carburant</h1>
+    <button type="button" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addQuotaModal">
+        <i class="fas fa-plus fa-sm text-white-50 me-1"></i> Ajouter Quota
+    </button>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Filtres de Recherche</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="form-group">
+                            <label for="selectedEmployee">Employé</label>
+                            <select class="form-control" id="selectedEmployee">
+                                <option value="">Tous les employés</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="form-group">
+                            <label for="selectedMonth">Mois</label>
+                            <select class="form-control" id="selectedMonth">
+                                <option value="1">Janvier</option>
+                                <option value="2">Février</option>
+                                <option value="3">Mars</option>
+                                <option value="4">Avril</option>
+                                <option value="5">Mai</option>
+                                <option value="6">Juin</option>
+                                <option value="7">Juillet</option>
+                                <option value="8">Août</option>
+                                <option value="9">Septembre</option>
+                                <option value="10">Octobre</option>
+                                <option value="11">Novembre</option>
+                                <option value="12">Décembre</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="form-group">
+                            <label for="selectedYear">Année</label>
+                            <select class="form-control" id="selectedYear">
+                                <option value="2024">2024</option>
+                                <option value="2025" selected>2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4 d-flex align-items-end">
+                        <button type="button" class="btn btn-primary btn-block" id="loadQuotasBtn">
+                            <i class="fas fa-sync-alt me-1"></i>Rechercher
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Liste des Quotas</h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink2" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink2">
+                        <div class="dropdown-header">Options:</div>
+                        <a class="dropdown-item" href="#">Exporter</a>
+                        <a class="dropdown-item" href="#">Imprimer</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item text-danger" href="#">Supprimer</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="quotasTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Employé</th>
+                                <th>Matricule</th>
+                                <th>Période</th>
+                                <th>Quota Attribué (L)</th>
+                                <th>Consommé (L)</th>
+                                <th>Disponible (L)</th>
+                                <th>Progression</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded via API -->
+                            <tr>
+                                <td colspan="9" class="text-center">Sélectionnez un critère et cliquez sur rechercher</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Quota Modal -->
+<div class="modal fade" id="addQuotaModal" tabindex="-1" aria-labelledby="addQuotaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addQuotaModalLabel">Gérer le Quota de Carburant</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quotaForm">
+                    <input type="hidden" id="quotaId" value="0" />
+                    <input type="hidden" id="employeeId" value="0" />
+                    <div class="mb-3">
+                        <label for="employeeName" class="form-label">Employé</label>
+                        <input type="text" class="form-control" id="employeeName" readonly>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="quotaMonth" class="form-label">Mois</label>
+                                <select class="form-control" id="quotaMonth">
+                                    <option value="1">Janvier</option>
+                                    <option value="2">Février</option>
+                                    <option value="3">Mars</option>
+                                    <option value="4">Avril</option>
+                                    <option value="5">Mai</option>
+                                    <option value="6">Juin</option>
+                                    <option value="7">Juillet</option>
+                                    <option value="8">Août</option>
+                                    <option value="9">Septembre</option>
+                                    <option value="10">Octobre</option>
+                                    <option value="11">Novembre</option>
+                                    <option value="12">Décembre</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="quotaYear" class="form-label">Année</label>
+                                <select class="form-control" id="quotaYear">
+                                    <option value="2024">2024</option>
+                                    <option value="2025" selected>2025</option>
+                                    <option value="2026">2026</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quotaInLiters" class="form-label">Quantité de Carburant (L)</label>
+                        <input type="number" class="form-control" id="quotaInLiters" step="0.01" min="0" required>
+                        <div class="form-text">Quantité attribuée pour cette période</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="saveQuotaBtn">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let quotas = [];
+        let employees = [];
+
+        function loadEmployees() {
+            fetch('/api/employees')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Erreur lors du chargement des employés');
+                    }
+                })
+                .then(data => {
+                    employees = data;
+                    const select = document.getElementById('selectedEmployee');
+                    select.innerHTML = '<option value="">Tous les employés</option>';
+                    employees.forEach(employee => {
+                        const option = document.createElement('option');
+                        option.value = employee.id;
+                        option.textContent = `${employee.firstName} ${employee.lastName} (${employee.employeeNumber})`;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading employees:', error);
+                    showError('Erreur lors du chargement des employés');
+                });
+        }
+
+        function loadQuotas() {
+            const employeeId = document.getElementById('selectedEmployee').value;
+            const month = document.getElementById('selectedMonth').value;
+            const year = document.getElementById('selectedYear').value;
+
+            if (!month || !year) {
+                alert('Veuillez sélectionner à la fois le mois et l\'année');
+                return;
+            }
+
+            let url = `/api/quotas`;
+            if (employeeId) {
+                url += `/employee/${employeeId}`;
+            } else {
+                // Load all quotas for the selected month/year
+                url = `/api/quotas/month/${month}/year/${year}`; // This endpoint needs to be added
+            }
+
+            fetch(url)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Erreur lors du chargement des quotas');
+                    }
+                })
+                .then(data => {
+                    quotas = data;
+                    renderQuotasTable();
+                })
+                .catch(error => {
+                    console.error('Error loading quotas:', error);
+                    showError('Erreur lors du chargement des quotas');
+                });
+        }
+
+        function renderQuotasTable() {
+            const tbody = document.querySelector('#quotasTable tbody');
+            tbody.innerHTML = '';
+
+            quotas.forEach(quota => {
+                const employee = employees.find(emp => emp.id === quota.employeeId) || {};
+                const available = quota.quotaInLiters - quota.usedLiters;
+                const progress = (quota.usedLiters / quota.quotaInLiters) * 100;
+
+                let statusClass = 'bg-success';
+                let statusText = 'OK';
+                if (progress > 90) {
+                    statusClass = 'bg-danger';
+                    statusText = 'Critique';
+                } else if (progress > 75) {
+                    statusClass = 'bg-warning';
+                    statusText = 'Problème';
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${employee.firstName || ''} ${employee.lastName || ''}</td>
+                    <td>${employee.employeeNumber || ''}</td>
+                    <td>${getMonthName(quota.month)}/${quota.year}</td>
+                    <td>${quota.quotaInLiters}</td>
+                    <td>${quota.usedLiters}</td>
+                    <td>${available}</td>
+                    <td>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar" role="progressbar" style="width: ${progress}%;" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <small>${Math.round(progress)}%</small>
+                    </td>
+                    <td><span class="badge ${statusClass}">${statusText}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editQuota(${quota.id})"><i class="fas fa-edit"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function getMonthName(month) {
+            const months = [
+                '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+            ];
+            return months[month] || '';
+        }
+
+        function editQuota(id) {
+            const quota = quotas.find(q => q.id === id);
+            if (quota) {
+                document.getElementById('quotaId').value = quota.id;
+                document.getElementById('employeeId').value = quota.employeeId;
+
+                const employee = employees.find(emp => emp.id === quota.employeeId) || {};
+                document.getElementById('employeeName').value = `${employee.firstName || ''} ${employee.lastName || ''}`;
+
+                document.getElementById('quotaMonth').value = quota.month;
+                document.getElementById('quotaYear').value = quota.year;
+                document.getElementById('quotaInLiters').value = quota.quotaInLiters;
+
+                document.getElementById('addQuotaModalLabel').textContent = 'Modifier le Quota';
+                document.getElementById('saveQuotaBtn').textContent = 'Mettre à Jour';
+                const modal = new bootstrap.Modal(document.getElementById('addQuotaModal'));
+                modal.show();
+            }
+        }
+
+        document.getElementById('saveQuotaBtn').addEventListener('click', function() {
+            const id = document.getElementById('quotaId').value;
+            const quotaData = {
+                employeeId: parseInt(document.getElementById('employeeId').value),
+                month: parseInt(document.getElementById('quotaMonth').value),
+                year: parseInt(document.getElementById('quotaYear').value),
+                quotaInLiters: parseFloat(document.getElementById('quotaInLiters').value)
+            };
+
+            const url = '/api/quotas';
+            const method = 'POST'; // Always POST since our API handles both create and update
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(quotaData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Erreur lors de l\'enregistrement du quota');
+                }
+            })
+            .then(data => {
+                loadQuotas();
+                showSuccess('Quota enregistré avec succès');
+                bootstrap.Modal.getInstance(document.getElementById('addQuotaModal')).hide();
+            })
+            .catch(error => {
+                console.error('Error saving quota:', error);
+                showError('Erreur lors de l\'enregistrement du quota');
+            });
+        });
+
+        document.getElementById('loadQuotasBtn').addEventListener('click', loadQuotas);
+
+        // Load employees when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEmployees();
+        });
+    </script>
+}

@@ -1,0 +1,389 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Tableau de bord</h1>
+    <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle shadow-sm" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-download fa-sm text-white-50 me-1"></i> Exporter les données
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow animated--fade-in" aria-labelledby="exportDropdown">
+            <li><h6 class="dropdown-header">Format JSON</h6></li>
+            <li><a class="dropdown-item" href="/api/export/json">Snapshot complet (.json)</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><h6 class="dropdown-header">Format CSV</h6></li>
+            <li><a class="dropdown-item" href="/api/export/csv/employees">Liste des employés (.csv)</a></li>
+            <li><a class="dropdown-item" href="/api/export/csv/consumptions">Historique consommations (.csv)</a></li>
+            <li><a class="dropdown-item" href="/api/export/csv/cards">Liste des cartes (.csv)</a></li>
+        </ul>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-4 col-md-6 mb-4">
+        <a asp-page="/Employees/Index" class="text-decoration-none">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Employés</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalEmployees">0</div>
+                           
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <a asp-page="/Cards/Index" class="text-decoration-none">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Cartes Actives</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeCards">0</div>
+                            
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-id-card fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-xl-4 col-md-12 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Stock disponible</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="availableQuota">0 L</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Consommation des 7 derniers jours</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height:350px;">
+                    <canvas id="consumptionDashboardChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Include SignalR JavaScript library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        // Establish SignalR connection
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/notificationHub")
+            .build();
+
+        connection.start().then(function () {
+            console.log("SignalR Connected");
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+
+        // Receive notifications
+        connection.on("ReceiveNotification", function (message) {
+            const notificationsDiv = document.getElementById("notifications");
+            if (notificationsDiv) { // Vérifier si l'élément existe
+                const newNotification = document.createElement("div");
+                newNotification.className = "alert alert-info p-2 mb-1";
+                newNotification.innerHTML = `<small>${new Date(message.timestamp || new Date()).toLocaleString()}: ${message}</small>`;
+                notificationsDiv.appendChild(newNotification);
+                notificationsDiv.scrollTop = notificationsDiv.scrollHeight;
+            }
+        });
+
+        // Receive transaction updates
+        connection.on("ReceiveTransactionUpdate", function (update) {
+            // Update UI with transaction data
+            const transactionHtml = `<div class="alert alert-light border mb-2 p-2">
+                <div><strong>Carte:</strong> ${update.cardNumber}</div>
+                <div><strong>Quantité:</strong> ${update.amount}L</div>
+                <div><strong>Heure:</strong> ${new Date(update.timestamp).toLocaleString()}</div>
+            </div>`;
+
+            const transactionsDiv = document.getElementById("recentTransactions");
+            if (transactionsDiv) { // Vérifier si l'élément existe
+                const existingContent = transactionsDiv.innerHTML;
+                transactionsDiv.innerHTML = transactionHtml + existingContent;
+            }
+        });
+
+        // Receive consumption updates
+        connection.on("ReceiveConsumptionUpdate", function (update) {
+            // Update notifications
+            const notificationsDiv = document.getElementById("notifications");
+            if (notificationsDiv) { // Vérifier si l'élément existe
+                const newNotification = document.createElement("div");
+                newNotification.className = "alert alert-info p-2 mb-1";
+                newNotification.innerHTML = `<small>${new Date(update.timestamp).toLocaleString()}: ${update.employeeName} a consommé ${update.amount}L de carburant</small>`;
+                notificationsDiv.appendChild(newNotification);
+                notificationsDiv.scrollTop = notificationsDiv.scrollHeight;
+            }
+        });
+
+        // Function to add authorization header to fetch requests
+        function fetchWithAuth(url, options = {}) {
+            // Use Identity authentication cookies instead of JWT
+            const headers = {
+                ...options.headers
+            };
+
+            // Add content-type if it's not already specified and we're sending JSON
+            if (!headers['Content-Type'] && options.body && typeof options.body === 'string') {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            return fetch(url, {
+                ...options,
+                headers,
+                credentials: 'include'  // Include authentication cookies
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    // Unauthorized - redirect to login
+                    window.location.href = '/Login';
+                }
+                return response;
+            });
+        }
+
+        // Load dashboard statistics
+        async function loadDashboardStats() {
+            // Fonction pour attendre que l'élément soit disponible
+            const waitForElement = (selector, maxWait = 5000) => {
+                return new Promise((resolve, reject) => {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        resolve(element);
+                        return;
+                    }
+
+                    const observer = new MutationObserver(() => {
+                        const element = document.querySelector(selector);
+                        if (element) {
+                            observer.disconnect();
+                            resolve(element);
+                        }
+                    });
+
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+
+                    setTimeout(() => {
+                        observer.disconnect();
+                        reject(new Error(`Element ${selector} not found after ${maxWait}ms`));
+                    }, maxWait);
+                });
+            };
+
+            // Load total employees count
+            try {
+                const employeeCountElement = await waitForElement('#totalEmployees');
+
+                console.log("Attempting to load employee count...");
+                const response = await fetchWithAuth('/api/employees/count');
+
+                if (response.status === 401) {
+                    window.location.href = '/Login';
+                    return;
+                }
+
+                const count = await response.json();
+                console.log("Employee count received:", count);
+                employeeCountElement.textContent = count;
+                console.log("Successfully updated totalEmployees element to:", count);
+            } catch (error) {
+                console.error('Error loading employee count:', error);
+
+                try {
+                    const response = await fetchWithAuth('/api/employees');
+
+                    if (response.status === 401) {
+                        window.location.href = '/Login';
+                        return;
+                    }
+
+                    const employees = await response.json();
+                    const count = Array.isArray(employees) ? employees.length : 0;
+                    console.log("Fallback employee count:", count);
+
+                    const employeeCountElement = await waitForElement('#totalEmployees');
+                    employeeCountElement.textContent = count;
+                } catch (fallbackError) {
+                    console.error('Fallback also failed:', fallbackError);
+                    try {
+                        const employeeCountElement = await waitForElement('#totalEmployees');
+                        employeeCountElement.textContent = "N/A";
+                    } catch (domError) {
+                        console.error("Could not update DOM element:", domError);
+                    }
+                }
+            }
+
+            // Load active cards
+            try {
+                const response = await fetchWithAuth('/api/cards');
+
+                if (response.status === 401) {
+                    window.location.href = '/Login';
+                    return;
+                }
+
+                const cards = await response.json();
+                const activeCards = Array.isArray(cards) ?
+                    cards.filter(card => card.status === 'Active' || card.status === 'active').length : 0;
+
+                const activeCardsElement = await waitForElement('#activeCards');
+                activeCardsElement.textContent = activeCards;
+            } catch (error) {
+                console.error('Error loading cards:', error);
+                try {
+                    const activeCardsElement = await waitForElement('#activeCards');
+                    activeCardsElement.textContent = "N/A";
+                } catch (domError) {
+                    console.error("Could not update activeCards element:", domError);
+                }
+            }
+
+            // Load total available quota for all employees in current month
+            try {
+                const response = await fetchWithAuth('/api/quotas/available-total');
+
+                if (response.status === 401) {
+                    window.location.href = '/Login';
+                    return;
+                }
+
+                const available = await response.json();
+
+                const availableQuotaElement = await waitForElement('#availableQuota');
+                availableQuotaElement.textContent = `${available} L`;
+            } catch (error) {
+                console.error('Error loading available quota:', error);
+                try {
+                    const availableQuotaElement = await waitForElement('#availableQuota');
+                    availableQuotaElement.textContent = "0 L";
+                } catch (domError) {
+                    console.error("Could not update availableQuota element:", domError);
+                }
+            }
+        }
+
+        // Initialize charts
+        async function loadConsumptionChart() {
+            try {
+                // Generate the last 7 days locally (including today)
+                const days = [];
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    days.push({
+                        dateStr: d.toISOString().split('T')[0],
+                        label: d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+                        total: 0
+                    });
+                }
+                
+                const startDate = days[0].dateStr;
+                const endDate = days[6].dateStr;
+                
+                // Add one day to endDate for the API to include the full day
+                const apiEndDate = new Date(days[6].dateStr);
+                apiEndDate.setDate(apiEndDate.getDate() + 1);
+                const apiEndDateStr = apiEndDate.toISOString().split('T')[0];
+                
+                const url = `/api/consumptions/all-employees/grouped-period?startDate=${startDate}&endDate=${apiEndDateStr}&groupBy=day`;
+                
+                const response = await fetchWithAuth(url);
+                if (!response.ok) throw new Error('Failed to load chart data');
+                
+                const apiData = await response.json();
+                
+                // Map API data to our 7 days
+                days.forEach(day => {
+                    const match = apiData.find(item => item.period === day.dateStr);
+                    if (match) {
+                        day.total = match.totalConsumption;
+                    }
+                });
+                
+                const ctx = document.getElementById('consumptionDashboardChart').getContext('2d');
+                
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: days.map(d => d.label),
+                        datasets: [{
+                            label: 'Consommation (L)',
+                            data: days.map(d => d.total),
+                            backgroundColor: 'rgba(78, 115, 223, 0.5)',
+                            borderColor: 'rgba(78, 115, 223, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                grid: { display: false, drawBorder: false }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { maxTicksLimit: 5, padding: 10 }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return ` ${context.parsed.y} L`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading consumption chart:', error);
+            }
+        }
+
+
+        // Initialize the dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardStats();
+            loadConsumptionChart();
+        });
+    </script>
+}

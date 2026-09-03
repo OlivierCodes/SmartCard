@@ -1,0 +1,359 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@model SmartCard.Pages.Roles.IndexModel
+@{
+    ViewData["Title"] = "Gestion des Utilisateurs et Rôles";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Gestion des Accès</h1>
+    <div>
+        <button type="button" class="btn btn-sm btn-success shadow-sm" onclick="openAddUserModal()">
+            <i class="fas fa-user-plus fa-sm text-white-50 me-1"></i> Nouvel Utilisateur
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Liste des Utilisateurs -->
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Utilisateurs du Système</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="usersTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Email</th>
+                                <th>Rôles</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersListBody">
+                            <tr>
+                                <td colspan="4" class="text-center">Chargement...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Gestion Utilisateur (Create/Edit) -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="userModalLabel">Gestion Utilisateur</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" id="userId" value="" />
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="firstName" class="form-label">Prénom</label>
+                            <input type="text" class="form-control" id="firstName" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="lastName" class="form-label">Nom</label>
+                            <input type="text" class="form-control" id="lastName" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email (Nom d'utilisateur)</label>
+                        <input type="email" class="form-control" id="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Mot de passe</label>
+                        <input type="password" class="form-control" id="password">
+                        <small id="passwordHelp" class="form-text text-muted">Laissez vide pour conserver le mot de passe actuel lors d'une modification.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label d-block">Attribuer des Rôles</label>
+                        <div id="rolesCheckboxContainer" class="d-flex flex-wrap gap-2 p-2 border rounded bg-light">
+                            <!-- Roles checkboxes will be loaded here -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="saveUserBtn">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmation Suppression Utilisateur -->
+<div class="modal fade" id="confirmDeleteUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer l'utilisateur <strong id="userToDeleteName"></strong> ?</p>
+                <p class="text-danger small"><strong>Attention :</strong> Cette action est irréversible.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteUserBtn">Supprimer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let allRoles = [];
+        let allUsers = [];
+
+        // Charger tout au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInitialData();
+            
+            // Événements
+            document.getElementById('saveUserBtn').addEventListener('click', saveUser);
+        });
+
+        async function loadInitialData() {
+            await loadRoles();
+            await loadUsers();
+        }
+
+        // --- RÔLES ---
+
+        async function loadRoles() {
+            try {
+                const response = await fetchWithAuth('/api/RoleManagement/roles');
+                if (!response.ok) throw new Error('Erreur chargement rôles');
+                
+                allRoles = await response.json();
+                renderRolesCheckboxes();
+            } catch (error) {
+                console.error(error);
+                showError('Impossible de charger les rôles');
+            }
+        }
+
+        function renderRolesCheckboxes() {
+            const container = document.getElementById('rolesCheckboxContainer');
+            container.innerHTML = allRoles.map(role => `
+                <div class="form-check">
+                    <input class="form-check-input role-checkbox" type="checkbox" value="${role}" id="role_${role}">
+                    <label class="form-check-label" for="role_${role}">${role}</label>
+                </div>
+            `).join('');
+        }
+
+        // --- UTILISATEURS ---
+
+        async function loadUsers() {
+            try {
+                const response = await fetchWithAuth('/api/RoleManagement/users');
+                if (!response.ok) throw new Error('Erreur chargement utilisateurs');
+                
+                allUsers = await response.json();
+                renderUsersTable();
+            } catch (error) {
+                showError('Impossible de charger les utilisateurs');
+            }
+        }
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('usersListBody');
+            if (allUsers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">Aucun utilisateur trouvé</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = allUsers.map(user => `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width:35px; height:35px;">
+                                <i class="fas fa-user text-primary"></i>
+                            </div>
+                            <div>
+                                <div class="font-weight-bold text-dark">${user.firstName} ${user.lastName}</div>
+                                <div class="text-xs text-muted">ID: ${user.id.substring(0, 8)}...</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${user.email}</td>
+                    <td>
+                        ${user.roles.map(r => `<span class="badge bg-info text-white me-1">${r}</span>`).join('') || '<span class="text-muted small">Aucun rôle</span>'}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editUser('${user.id}')" title="Modifier">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteUser('${user.id}', '${user.firstName} ${user.lastName}')" title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddUserModal() {
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('userModalLabel').textContent = 'Nouvel Utilisateur';
+            document.getElementById('passwordHelp').textContent = 'Mot de passe requis pour la création.';
+            document.getElementById('password').setAttribute('required', 'required');
+            
+            // Décocher tous les rôles
+            document.querySelectorAll('.role-checkbox').forEach(cb => cb.checked = false);
+            
+            new bootstrap.Modal(document.getElementById('userModal')).show();
+        }
+
+        function editUser(id) {
+            const user = allUsers.find(u => u.id === id);
+            if (!user) return;
+
+            document.getElementById('userId').value = user.id;
+            document.getElementById('firstName').value = user.firstName;
+            document.getElementById('lastName').value = user.lastName;
+            document.getElementById('email').value = user.email;
+            document.getElementById('password').value = '';
+            document.getElementById('password').removeAttribute('required');
+            document.getElementById('passwordHelp').textContent = 'Laissez vide pour conserver le mot de passe actuel.';
+            document.getElementById('userModalLabel').textContent = 'Modifier Utilisateur';
+
+            // Cocher les rôles
+            document.querySelectorAll('.role-checkbox').forEach(cb => {
+                cb.checked = user.roles.includes(cb.value);
+            });
+
+            new bootstrap.Modal(document.getElementById('userModal')).show();
+        }
+
+        async function saveUser() {
+            const id = document.getElementById('userId').value;
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            
+            const roles = Array.from(document.querySelectorAll('.role-checkbox:checked')).map(cb => cb.value);
+
+            if (!firstName || !lastName || !email || (!id && !password)) {
+                showError('Veuillez remplir tous les champs obligatoires');
+                return;
+            }
+
+            const userData = { id, firstName, lastName, email, password, roles };
+            const isUpdate = !!id;
+            const url = isUpdate ? `/api/RoleManagement/users/${id}` : '/api/RoleManagement/users';
+            const method = isUpdate ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetchWithAuth(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.message || 'Erreur lors de l\'enregistrement');
+                }
+
+                showSuccess(isUpdate ? 'Utilisateur mis à jour' : 'Utilisateur créé');
+                bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+                loadUsers();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function confirmDeleteUser(id, name) {
+            document.getElementById('userToDeleteName').textContent = name;
+            document.getElementById('confirmDeleteUserBtn').onclick = () => deleteUser(id);
+            new bootstrap.Modal(document.getElementById('confirmDeleteUserModal')).show();
+        }
+
+        async function deleteUser(id) {
+            try {
+                const response = await fetchWithAuth(`/api/RoleManagement/users/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.message || 'Erreur lors de la suppression');
+                }
+
+                showSuccess('Utilisateur supprimé');
+                bootstrap.Modal.getInstance(document.getElementById('confirmDeleteUserModal')).hide();
+                loadUsers();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        // --- UTILITAIRES ---
+
+        function fetchWithAuth(url, options = {}) {
+            return fetch(url, {
+                ...options,
+                credentials: 'include'
+            }).then(response => {
+                if (response.status === 401) window.location.href = '/Login';
+                return response;
+            });
+        }
+
+        function showSuccess(message) {
+            showToast(message, 'Succès', 'bg-success');
+        }
+
+        function showError(message) {
+            showToast(message, 'Erreur', 'bg-danger');
+        }
+
+        function showToast(message, title, bgClass) {
+            let toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '1100';
+                document.body.appendChild(toastContainer);
+            }
+
+            const toastElement = document.createElement('div');
+            toastElement.className = 'toast';
+            toastElement.setAttribute('role', 'alert');
+            toastElement.setAttribute('aria-live', 'assertive');
+            toastElement.setAttribute('aria-atomic', 'true');
+
+            toastElement.innerHTML = `
+                <div class="toast-header ${bgClass} text-white">
+                    <strong class="me-auto">${title}</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    ${message}
+                </div>
+            `;
+
+            toastContainer.appendChild(toastElement);
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+
+            toastElement.addEventListener('hidden.bs.toast', function() {
+                toastElement.remove();
+            });
+        }
+    </script>
+}

@@ -1,0 +1,534 @@
+@page
+@model EmployeesModel
+@{
+    ViewData["Title"] = "Gestion des Employés";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Gestion des Employés</h1>
+    <button type="button" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+        <i class="fas fa-plus fa-sm text-white-50 me-1"></i> Ajouter Employé
+    </button>
+</div>
+
+<!-- Filtres de recherche -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="form-group">
+            <label for="searchInput">Rechercher</label>
+            <input type="text" class="form-control" id="searchInput" placeholder="Nom, email, numéro...">
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="form-group">
+            <label for="departmentFilter">Département</label>
+            <select class="form-control" id="departmentFilter">
+                <option value="">Tous les départements</option>
+            </select>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="form-group">
+            <label for="quotaFilter">Quota</label>
+            <select class="form-control" id="quotaFilter">
+                <option value="">Tous les quotas</option>
+                <option value="0-50">0-50 L</option>
+                <option value="50-100">50-100 L</option>
+                <option value="100+">100+ L</option>
+            </select>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4 d-flex align-items-end">
+        <button type="button" class="btn btn-primary me-2" id="searchBtn">
+            <i class="fas fa-search me-1"></i>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn">
+            <i class="fas fa-sync-alt me-1"></i>Réinitialiser
+        </button>
+    </div>
+</div>
+
+<!-- Content Row -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Liste des Employés</h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                        <div class="dropdown-header">Options:</div>
+                        <a class="dropdown-item" href="#">Exporter</a>
+                        <a class="dropdown-item" href="#">Imprimer</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item text-danger" href="#">Supprimer</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="employeesTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Identifiant</th>
+                                <th>Nom Complet</th>
+                                <th>Email</th>
+                                <th>Département</th>
+                                <th>Quota (L)</th>
+                                <th>Stock disponible (L)</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded via API -->
+                            <tr>
+                                <td colspan="8" class="text-center">Chargement des données...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Employee Modal -->
+<div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addEmployeeModalLabel">Gestion Employé</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <form id="employeeForm">
+                    <input type="hidden" id="employeeId" value="0" />
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="departmentId" class="form-label">Département</label>
+                                <select class="form-control" id="departmentId">
+                                    <option value="">Sélectionnez un département</option>
+                                </select>
+                                <div class="form-text">Sélectionnez le département d'affectation</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Field removed - employee number is auto-generated -->
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="firstName" class="form-label">Prénom</label>
+                                <input type="text" class="form-control" id="firstName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="lastName" class="form-label">Nom</label>
+                                <input type="text" class="form-control" id="lastName" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="monthlyFuelQuota" class="form-label">Quota de Carburant (L)</label>
+                                <input type="number" class="form-control" id="monthlyFuelQuota" step="0.01" min="0" required>
+                                <div class="form-text">Quantité de carburant autorisée</div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="saveEmployeeBtn">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let employees = [];
+
+        // Function to add authorization header to fetch requests
+        function fetchWithAuth(url, options = {}) {
+            // Use Identity authentication cookies instead of JWT
+            const headers = {
+                ...options.headers
+            };
+
+            // Add content-type if it's not already specified and we should send JSON
+            if (!headers['Content-Type'] && options.body && typeof options.body === 'string') {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            return fetch(url, {
+                ...options,
+                headers,
+                credentials: 'include'  // Include authentication cookies
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    // Unauthorized - redirect to login
+                    window.location.href = '/Login';
+                }
+                return response;
+            });
+        }
+
+        function loadEmployees() {
+            fetchWithAuth('/api/employees')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    employees = data;
+                    renderEmployeesTable();
+                })
+                .catch(error => console.error('Error loading employees:', error));
+        }
+
+        function renderEmployeesTable() {
+            const tbody = document.querySelector('#employeesTable tbody');
+            tbody.innerHTML = '';
+
+            employees.forEach(employee => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${employee.employeeNumber}</td>
+                    <td>${employee.firstName} ${employee.lastName}</td>
+                    <td>${employee.email || ''}</td>
+                    <td>${employee.department || ''}</td>
+                    <td>${employee.monthlyFuelQuota}</td>
+                    <td>${employee.availableFuelQuota}</td>
+                    <td>
+                        <span class="badge bg-success">Actif</span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editEmployee(${employee.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${employee.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function editEmployee(id) {
+            const employee = employees.find(emp => emp.id === id);
+            if (employee) {
+                document.getElementById('employeeId').value = employee.id;
+                document.getElementById('firstName').value = employee.firstName;
+                document.getElementById('lastName').value = employee.lastName;
+                document.getElementById('email').value = employee.email || '';
+                document.getElementById('departmentId').value = employee.departmentId || '';
+                document.getElementById('monthlyFuelQuota').value = employee.monthlyFuelQuota;
+
+                document.getElementById('addEmployeeModalLabel').textContent = 'Modifier Employé';
+                document.getElementById('saveEmployeeBtn').textContent = 'Mettre à Jour';
+                const modal = new bootstrap.Modal(document.getElementById('addEmployeeModal'));
+                modal.show();
+            }
+        }
+
+        function deleteEmployee(id) {
+            // Afficher la modal de confirmation
+            const confirmModal = document.getElementById('confirmDeleteModal');
+            if (!confirmModal) {
+                // Créer la modal dynamiquement si elle n'existe pas
+                const modalHtml = `
+                    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmation de suppression</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Êtes-vous sûr de vouloir supprimer cet employé ?</p>
+                                    <p class="text-danger"><strong>Cette action est irréversible.</strong></p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Supprimer</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            }
+
+            // Stocker l'ID de l'employé à supprimer
+            document.getElementById('confirmDeleteBtn').onclick = function() {
+                fetchWithAuth(`/api/employees/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        loadEmployees();
+                        showSuccess('Employé supprimé avec succès');
+                        // Fermer la modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+                        modal.hide();
+                    } else {
+                        showError('Erreur lors de la suppression de l\'employé');
+                        // Fermer la modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+                        modal.hide();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting employee:', error);
+                    showError('Erreur lors de la suppression de l\'employé');
+                    // Fermer la modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+                    modal.hide();
+                });
+            };
+
+            // Afficher la modal
+            const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+            modal.show();
+        }
+
+        // Load departments to populate the dropdown
+        function loadDepartmentsForDropdown() {
+            fetch('/api/departments')
+                .then(response => response.json())
+                .then(departments => {
+                    const departmentSelect = document.getElementById('departmentId');
+                    departmentSelect.innerHTML = '<option value="">Sélectionnez un département</option>';
+
+                    departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        departmentSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading departments:', error);
+                    // Show a message that departments couldn't be loaded
+                    const departmentSelect = document.getElementById('departmentId');
+                    departmentSelect.innerHTML = '<option value="">Départements non disponibles</option>';
+                });
+        }
+
+        document.getElementById('saveEmployeeBtn').addEventListener('click', function() {
+            const id = document.getElementById('employeeId').value;
+            const departmentId = document.getElementById('departmentId').value;
+
+            // Validation côté client
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const monthlyFuelQuota = document.getElementById('monthlyFuelQuota').value;
+
+            if (!firstName || !lastName || !monthlyFuelQuota) {
+                showError('Tous les champs requis doivent être remplis');
+                return;
+            }
+
+            const employeeData = {
+                id: parseInt(id),
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                departmentId: departmentId ? parseInt(departmentId) : null,
+                monthlyFuelQuota: parseFloat(monthlyFuelQuota)
+            };
+
+            const isUpdate = id !== '0' && id !== 'undefined' && id !== '';
+            const url = isUpdate ? `/api/employees/${id}` : '/api/employees';
+            const method = isUpdate ? 'PUT' : 'POST';
+            const actionText = isUpdate ? 'mis à jour' : 'ajouté';
+
+            fetchWithAuth(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(employeeData)
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    // Unauthorized - redirect to login
+                    window.location.href = '/Login';
+                    return;
+                }
+                if (response.ok) {
+                    return response.json();
+                } else if (response.status === 400) {
+                    return response.json().then(errorData => {
+                        throw new Error(`Erreur 400: ${errorData.title || 'Bad Request'} - ${errorData.detail || errorData.message || 'Erreur de validation'}`);
+                    });
+                } else {
+                    throw new Error(`Erreur ${method === 'POST' ? 'd\'ajout' : 'de mise à jour'} de l\'employé (status: ${response.status})`);
+                }
+            })
+            .then(data => {
+                loadEmployees();
+                showSuccess(`Employé ${actionText} avec succès`);
+                // Réinitialiser le formulaire
+                document.getElementById('employeeForm').reset();
+                document.getElementById('employeeId').value = '0';
+                document.getElementById('addEmployeeModalLabel').textContent = 'Gestion Employé';
+                document.getElementById('saveEmployeeBtn').textContent = 'Enregistrer';
+                bootstrap.Modal.getInstance(document.getElementById('addEmployeeModal')).hide();
+            })
+            .catch(error => {
+                console.error(`Error ${method === 'POST' ? 'saving' : 'updating'} employee:`, error);
+                showError(`Erreur lors de l'${method === 'POST' ? 'ajout' : 'actualisation'} de l'employé: ${error.message}`);
+            });
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('addEmployeeModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('employeeForm').reset();
+            document.getElementById('employeeId').value = '0';
+            document.getElementById('addEmployeeModalLabel').textContent = 'Ajouter Employé';
+            document.getElementById('saveEmployeeBtn').textContent = 'Enregistrer';
+        });
+
+        // Fonction pour charger les départements dans le filtre
+        function loadDepartmentsForFilter() {
+            fetch('/api/departments')
+                .then(response => response.json())
+                .then(departments => {
+                    const departmentSelect = document.getElementById('departmentFilter');
+                    departmentSelect.innerHTML = '<option value="">Tous les départements</option>';
+
+                    departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        departmentSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des départements pour le filtre:', error);
+                });
+        }
+
+        // Fonction pour filtrer les employés
+        function filterEmployees() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const departmentFilter = document.getElementById('departmentFilter').value;
+            const quotaFilter = document.getElementById('quotaFilter').value;
+
+            // Charger les employés avec les filtres
+            let url = '/api/employees';
+            const params = new URLSearchParams();
+
+            if (searchInput) params.append('search', searchInput);
+            if (departmentFilter) params.append('departmentId', departmentFilter);
+            if (quotaFilter) params.append('quotaFilter', quotaFilter);
+
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+
+            fetchWithAuth(url)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Erreur lors du chargement des employés filtrés');
+                    }
+                })
+                .then(data => {
+                    employees = data;
+                    renderEmployeesTable();
+                })
+                .catch(error => {
+                    console.error('Error filtering employees:', error);
+                    showError('Erreur lors du filtrage des employés');
+                });
+        }
+
+        // Fonction pour réinitialiser les filtres
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('departmentFilter').value = '';
+            document.getElementById('quotaFilter').value = '';
+            loadEmployees(); // Charger tous les employés
+        }
+
+        // Charger departments and employees when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDepartmentsForDropdown();
+            loadDepartmentsForFilter();
+            loadEmployees();
+
+            // Écouter les événements de recherche
+            document.getElementById('searchBtn').addEventListener('click', filterEmployees);
+            document.getElementById('searchInput').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    filterEmployees();
+                }
+            });
+            document.getElementById('resetFiltersBtn').addEventListener('click', resetFilters);
+        });
+
+        // Add error handling for department loading
+        function loadDepartmentsForDropdown() {
+            fetch('/api/departments')
+                .then(response => {
+                    if (!response.ok) {
+                        console.error('Erreur HTTP:', response.status);
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(departments => {
+                    console.log('Départements reçus:', departments); // Pour débogage
+                    const departmentSelect = document.getElementById('departmentId');
+                    departmentSelect.innerHTML = '<option value="">Sélectionnez un département</option>';
+
+                    if (departments.length === 0) {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'Aucun département disponible';
+                        departmentSelect.appendChild(option);
+                        return;
+                    }
+
+                    departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        departmentSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des départements:', error);
+                    const departmentSelect = document.getElementById('departmentId');
+                    departmentSelect.innerHTML = '<option value="">Erreur de chargement des départements</option>';
+
+                    // Afficher une alerte pour informer l'utilisateur
+                    if (confirm('Erreur de chargement des départements: ' + error.message + '\n\nVérifiez que la base de données contient des départements et que le serveur est accessible.')) {
+                        // Rafraîchir la page
+                        location.reload();
+                    }
+                });
+        }
+    </script>
+}
