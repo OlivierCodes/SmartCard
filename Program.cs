@@ -142,6 +142,7 @@ builder.Services.AddScoped<IConsumptionService, ConsumptionService>();
 builder.Services.AddScoped<ICardService, CardService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<ICompanyFuelService, CompanyFuelService>();
 
 // Ensure all required services are registered
 builder.Services.AddHttpContextAccessor();

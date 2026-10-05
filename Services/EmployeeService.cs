@@ -206,24 +206,40 @@ namespace SmartCard.Services
                     CreatedDate = DateTime.UtcNow
                 };
 
+                // Check company fuel stock if a quota is requested
+                if (createDto.MonthlyFuelQuota > 0)
+                {
+                    var totalSupplied = await _context.CompanyFuelSupplies.SumAsync(s => (decimal?)s.QuantityInLiters) ?? 0m;
+                    var totalAllocated = await _context.FuelQuotas.SumAsync(q => (decimal?)q.QuotaInLiters) ?? 0m;
+                    var remainingStock = totalSupplied - totalAllocated;
+
+                    if (totalSupplied > 0 && remainingStock < createDto.MonthlyFuelQuota)
+                    {
+                        throw new InvalidOperationException($"Stock de carburant restant insuffisant au niveau de l'entreprise ({remainingStock:N2} L disponible(s)). Impossible d'attribuer le quota de {createDto.MonthlyFuelQuota:N2} L.");
+                    }
+                }
+
                 _context.Employees.Add(employee);
                 await _context.SaveChangesAsync();
 
-                // Create initial fuel quota for current month
+                // Create initial fuel quota for current month if quota > 0 and stock is available
                 var currentMonth = DateTime.Now.Month;
                 var currentYear = DateTime.Now.Year;
 
-                var fuelQuota = new FuelQuota
+                if (employee.MonthlyFuelQuota > 0)
                 {
-                    EmployeeId = employee.Id,
-                    Month = currentMonth,
-                    Year = currentYear,
-                    QuotaInLiters = employee.MonthlyFuelQuota,
-                    CreatedDate = DateTime.UtcNow
-                };
+                    var fuelQuota = new FuelQuota
+                    {
+                        EmployeeId = employee.Id,
+                        Month = currentMonth,
+                        Year = currentYear,
+                        QuotaInLiters = employee.MonthlyFuelQuota,
+                        CreatedDate = DateTime.UtcNow
+                    };
 
-                _context.FuelQuotas.Add(fuelQuota);
-                await _context.SaveChangesAsync();
+                    _context.FuelQuotas.Add(fuelQuota);
+                    await _context.SaveChangesAsync();
+                }
 
                 _logger.LogInformation("Created new employee with ID {Id} and number {EmployeeNumber}", employee.Id, employee.EmployeeNumber);
                 return new EmployeeResponseDto

@@ -6,9 +6,30 @@
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800">Gestion des Quotas de Carburant</h1>
-    <button type="button" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addQuotaModal">
-        <i class="fas fa-plus fa-sm text-white-50 me-1"></i> Ajouter Quota
-    </button>
+    <div>
+        <a asp-page="/FuelStock/Index" class="btn btn-sm btn-outline-primary shadow-sm me-2">
+            <i class="fas fa-gas-pump me-1"></i> Stock Entreprise
+        </a>
+        <button type="button" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addQuotaModal">
+            <i class="fas fa-plus fa-sm text-white-50 me-1"></i> Ajouter Quota
+        </button>
+    </div>
+</div>
+
+<!-- Bandeau d'information sur le stock de carburant restant de l'entreprise -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info d-flex justify-content-between align-items-center shadow-sm mb-0">
+            <div>
+                <i class="fas fa-gas-pump me-2 text-primary"></i>
+                <strong>Stock d'essence de l'entreprise restant à distribuer : </strong>
+                <span class="badge bg-success fs-6 ms-1" id="companyStockRemaining">0 L</span>
+            </div>
+            <a asp-page="/FuelStock/Index" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus me-1"></i> Nouvel Approvisionnement
+            </a>
+        </div>
+    </div>
 </div>
 
 <div class="row">
@@ -123,6 +144,10 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body">
+                <div class="alert alert-light border small py-2 mb-3">
+                    <i class="fas fa-info-circle text-info me-1"></i>
+                    Stock restant de l'entreprise disponible pour distribution : <strong id="modalRemainingStock" class="text-success">0 L</strong>
+                </div>
                 <form id="quotaForm">
                     <input type="hidden" id="quotaId" value="0" />
                     <input type="hidden" id="employeeId" value="0" />
@@ -313,7 +338,23 @@
             }
         }
 
-        document.getElementById('saveQuotaBtn').addEventListener('click', function() {
+        async function loadCompanyStock() {
+            try {
+                const response = await fetch('/api/company-fuel/summary');
+                if (response.ok) {
+                    const data = await response.json();
+                    const formatted = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 2 }).format(data.remainingCompanyStockLiters) + ' L';
+                    const badge = document.getElementById('companyStockRemaining');
+                    if (badge) badge.textContent = formatted;
+                    const modalElem = document.getElementById('modalRemainingStock');
+                    if (modalElem) modalElem.textContent = formatted;
+                }
+            } catch (err) {
+                console.error('Erreur chargement stock entreprise:', err);
+            }
+        }
+
+        document.getElementById('saveQuotaBtn').addEventListener('click', async function() {
             const id = document.getElementById('quotaId').value;
             const quotaData = {
                 employeeId: parseInt(document.getElementById('employeeId').value),
@@ -325,36 +366,38 @@
             const url = '/api/quotas';
             const method = 'POST'; // Always POST since our API handles both create and update
 
-            fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(quotaData)
-            })
-            .then(response => {
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(quotaData)
+                });
+
                 if (response.ok) {
-                    return response.json();
+                    await response.json();
+                    loadQuotas();
+                    await loadCompanyStock();
+                    showSuccess('Quota enregistré avec succès');
+                    bootstrap.Modal.getInstance(document.getElementById('addQuotaModal')).hide();
                 } else {
-                    throw new Error('Erreur lors de l\'enregistrement du quota');
+                    const errData = await response.json().catch(() => ({}));
+                    const msg = errData.message || 'Erreur lors de l\'enregistrement du quota';
+                    showError(msg);
                 }
-            })
-            .then(data => {
-                loadQuotas();
-                showSuccess('Quota enregistré avec succès');
-                bootstrap.Modal.getInstance(document.getElementById('addQuotaModal')).hide();
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error saving quota:', error);
-                showError('Erreur lors de l\'enregistrement du quota');
-            });
+                showError(error.message || 'Erreur lors de l\'enregistrement du quota');
+            }
         });
 
         document.getElementById('loadQuotasBtn').addEventListener('click', loadQuotas);
 
-        // Load employees when page loads
+        // Load employees and company stock when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadEmployees();
+            loadCompanyStock();
         });
     </script>
 }

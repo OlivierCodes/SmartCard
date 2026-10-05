@@ -16,6 +16,7 @@ namespace SmartCard.Data
         public DbSet<Consumption> Consumptions { get; set; }
         public DbSet<Card> Cards { get; set; }
         public DbSet<Department> Departments { get; set; }
+        public DbSet<CompanyFuelSupply> CompanyFuelSupplies { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -98,6 +99,19 @@ namespace SmartCard.Data
                       .WithMany(c => c.Consumptions)
                       .HasForeignKey(c => c.CardId)
                       .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            // CompanyFuelSupply configuration
+            builder.Entity<CompanyFuelSupply>(entity =>
+            {
+                entity.HasKey(s => s.Id);
+                entity.Property(s => s.QuantityInLiters).HasColumnType("decimal(10,2)").IsRequired();
+                entity.Property(s => s.Supplier).HasMaxLength(100);
+                entity.Property(s => s.ReferenceNumber).HasMaxLength(100);
+                entity.Property(s => s.Notes).HasMaxLength(500);
+                entity.Property(s => s.CreatedBy).HasMaxLength(100);
+                entity.Property(s => s.SupplyDate).HasDefaultValueSql(Database.IsNpgsql() ? "CURRENT_TIMESTAMP" : "GETDATE()");
+                entity.Property(s => s.CreatedDate).HasDefaultValueSql(Database.IsNpgsql() ? "CURRENT_TIMESTAMP" : "GETDATE()");
             });
         }
     }

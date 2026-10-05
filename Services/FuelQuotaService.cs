@@ -76,6 +76,25 @@ namespace SmartCard.Services
                     throw new ArgumentException("Used liters cannot exceed quota liters");
                 }
 
+                // Vérifier si l'augmentation du quota est couverte par le stock de l'entreprise
+                var additionalLiters = updateDto.QuotaInLiters - quota.QuotaInLiters;
+                if (additionalLiters > 0)
+                {
+                    var totalSupplied = await _context.CompanyFuelSupplies.SumAsync(s => (decimal?)s.QuantityInLiters) ?? 0m;
+                    var totalAllocated = await _context.FuelQuotas.SumAsync(q => (decimal?)q.QuotaInLiters) ?? 0m;
+                    var remainingCompanyStock = totalSupplied - totalAllocated;
+
+                    if (totalSupplied > 0 && remainingCompanyStock < additionalLiters)
+                    {
+                        _logger.LogWarning("Tentative d'augmentation de quota (+{Additional}L) dépassant le stock restant ({Remaining}L)", additionalLiters, remainingCompanyStock);
+                        throw new InvalidOperationException($"Le stock de carburant restant de l'entreprise est insuffisant ({remainingCompanyStock:N2} L disponible(s)) pour augmenter ce quota de {additionalLiters:N2} L.");
+                    }
+                    else if (totalSupplied == 0)
+                    {
+                        throw new InvalidOperationException("Aucun stock de carburant n'a été approvisionné au niveau de l'entreprise. Veuillez d'abord ajouter un approvisionnement.");
+                    }
+                }
+
                 quota.QuotaInLiters = updateDto.QuotaInLiters;
                 quota.UsedLiters = updateDto.UsedLiters;
                 quota.UpdatedDate = DateTime.UtcNow;
@@ -153,6 +172,21 @@ namespace SmartCard.Services
                 {
                     _logger.LogWarning("Fuel quota already exists for employee {EmployeeId} in month {Month} year {Year}", createDto.EmployeeId, createDto.Month, createDto.Year);
                     throw new ArgumentException($"Fuel quota already exists for employee {createDto.EmployeeId} in month {createDto.Month} year {createDto.Year}");
+                }
+
+                // Vérifier la disponibilité dans le stock global de l'entreprise
+                var totalSupplied = await _context.CompanyFuelSupplies.SumAsync(s => (decimal?)s.QuantityInLiters) ?? 0m;
+                var totalAllocated = await _context.FuelQuotas.SumAsync(q => (decimal?)q.QuotaInLiters) ?? 0m;
+                var remainingCompanyStock = totalSupplied - totalAllocated;
+
+                if (totalSupplied > 0 && remainingCompanyStock < createDto.QuotaInLiters)
+                {
+                    _logger.LogWarning("Tentative d'attribution de quota {Requested}L dépassant le stock restant ({Remaining}L)", createDto.QuotaInLiters, remainingCompanyStock);
+                    throw new InvalidOperationException($"Le stock de carburant restant de l'entreprise est insuffisant ({remainingCompanyStock:N2} L disponible(s)). Impossible d'attribuer un quota de {createDto.QuotaInLiters:N2} L.");
+                }
+                else if (totalSupplied == 0)
+                {
+                    throw new InvalidOperationException("Aucun stock de carburant n'a été approvisionné au niveau de l'entreprise. Veuillez d'abord ajouter un approvisionnement.");
                 }
 
                 var fuelQuota = new FuelQuota

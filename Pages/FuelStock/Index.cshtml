@@ -1,0 +1,522 @@
+@page
+@model SmartCard.Pages.FuelStock.IndexModel
+@{
+    ViewData["Title"] = "Gestion du Stock Entreprise";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-gas-pump text-primary me-2"></i>Stock d'Essence de l'Entreprise</h1>
+        <p class="text-muted mb-0 small">Approvisionnement global, suivi des réserves de l'entreprise, distribution aux employés et consommations réelles.</p>
+    </div>
+    <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addSupplyModal">
+        <i class="fas fa-plus fa-sm text-white-50 me-1"></i> Nouvel Approvisionnement
+    </button>
+</div>
+
+<!-- Synthèse des 4 indicateurs clés -->
+<div class="row mb-4">
+    <!-- Total Approvisionné -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Approvisionné
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalSupplied">0 L</div>
+                        <small class="text-muted" id="suppliesCount">0 approvisionnement(s)</small>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-truck-loading fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ce qui reste dans l'entreprise (Disponible pour distribution) -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Reste en Réserve Entreprise
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="remainingCompanyStock">0 L</div>
+                        <small class="text-success font-weight-bold" id="remainingPercent">Disponible pour distribution</small>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-warehouse fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ce qui est à la disposition des employés -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            À Disposition des Employés
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="availableForEmployees">0 L</div>
+                        <small class="text-muted">Quotas distribués non encore pompés</small>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users-cog fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ce qui a été consommé -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Total Consommé
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalConsumed">0 L</div>
+                        <small class="text-muted">Prélèvements effectués à la pompe</small>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-burn fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barre visuelle de répartition du carburant -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Répartition Globale du Carburant</h6>
+                <span class="badge bg-info text-white" id="physicalStockBadge">Stock physique restant : 0 L</span>
+            </div>
+            <div class="card-body">
+                <div class="progress" style="height: 28px; font-size: 0.85rem;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" id="barRemaining" title="Reste en réserve entreprise">
+                        <span id="barRemainingText"></span>
+                    </div>
+                    <div class="progress-bar bg-warning text-dark" role="progressbar" style="width: 0%;" id="barAvailable" title="À disposition employés">
+                        <span id="barAvailableText"></span>
+                    </div>
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: 0%;" id="barConsumed" title="Consommé">
+                        <span id="barConsumedText"></span>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-around mt-3 text-center small">
+                    <div>
+                        <span class="badge bg-success p-2 me-1">&nbsp;</span>
+                        <strong class="text-success">Reste en Entreprise:</strong>
+                        <span id="legendRemaining">0 L (0%)</span>
+                    </div>
+                    <div>
+                        <span class="badge bg-warning p-2 me-1">&nbsp;</span>
+                        <strong class="text-warning">À Disposition Employés:</strong>
+                        <span id="legendAvailable">0 L (0%)</span>
+                    </div>
+                    <div>
+                        <span class="badge bg-danger p-2 me-1">&nbsp;</span>
+                        <strong class="text-danger">Consommé:</strong>
+                        <span id="legendConsumed">0 L (0%)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historique des approvisionnements -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Historique des Approvisionnements</h6>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadFuelData()">
+                    <i class="fas fa-sync-alt me-1"></i> Actualiser
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="suppliesTable" width="100%" cellspacing="0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date d'approvisionnement</th>
+                                <th>Quantité</th>
+                                <th>Fournisseur</th>
+                                <th>N° Référence / Bon</th>
+                                <th>Enregistré par</th>
+                                <th>Notes / Motif</th>
+                                <th class="text-center" style="width: 120px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="suppliesTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                    Chargement des données...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajouter un Approvisionnement -->
+<div class="modal fade" id="addSupplyModal" tabindex="-1" aria-labelledby="addSupplyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addSupplyModalLabel"><i class="fas fa-plus-circle me-2"></i>Nouvel Approvisionnement en Carburant</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <form id="addSupplyForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="supplyQuantity" class="form-label font-weight-bold">Quantité de Carburant (en Litres) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" min="0.01" class="form-control" id="supplyQuantity" required placeholder="ex: 5000">
+                            <span class="input-group-text font-weight-bold">Litres</span>
+                        </div>
+                        <div class="form-text">Cette quantité sera ajoutée au stock d'essence de l'entreprise.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="supplyDate" class="form-label font-weight-bold">Date d'approvisionnement</label>
+                        <input type="date" class="form-control" id="supplyDate">
+                    </div>
+                    <div class="mb-3">
+                        <label for="supplySupplier" class="form-label font-weight-bold">Fournisseur</label>
+                        <input type="text" class="form-control" id="supplySupplier" placeholder="ex: TotalEnergies, Shell, etc.">
+                    </div>
+                    <div class="mb-3">
+                        <label for="supplyReference" class="form-label font-weight-bold">N° Référence / Bon de Livraison</label>
+                        <input type="text" class="form-control" id="supplyReference" placeholder="ex: BL-2025-001">
+                    </div>
+                    <div class="mb-3">
+                        <label for="supplyNotes" class="form-label font-weight-bold">Notes / Commentaire</label>
+                        <textarea class="form-control" id="supplyNotes" rows="2" placeholder="Informations complémentaires éventuelles..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary" id="saveSupplyBtn">
+                        <i class="fas fa-check me-1"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifier un Approvisionnement -->
+<div class="modal fade" id="editSupplyModal" tabindex="-1" aria-labelledby="editSupplyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title" id="editSupplyModalLabel"><i class="fas fa-edit me-2"></i>Modifier l'Approvisionnement</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <form id="editSupplyForm">
+                <input type="hidden" id="editSupplyId">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editSupplyQuantity" class="form-label font-weight-bold">Quantité de Carburant (en Litres) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" min="0.01" class="form-control" id="editSupplyQuantity" required>
+                            <span class="input-group-text font-weight-bold">Litres</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSupplyDate" class="form-label font-weight-bold">Date d'approvisionnement</label>
+                        <input type="date" class="form-control" id="editSupplyDate">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSupplySupplier" class="form-label font-weight-bold">Fournisseur</label>
+                        <input type="text" class="form-control" id="editSupplySupplier">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSupplyReference" class="form-label font-weight-bold">N° Référence / Bon</label>
+                        <input type="text" class="form-control" id="editSupplyReference">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSupplyNotes" class="form-label font-weight-bold">Notes</label>
+                        <textarea class="form-control" id="editSupplyNotes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary" id="updateSupplyBtn">
+                        <i class="fas fa-save me-1"></i> Mettre à jour
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentSupplies = [];
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num || 0);
+        }
+
+        async function loadFuelData() {
+            await Promise.all([loadFuelSummary(), loadSuppliesList()]);
+        }
+
+        async function loadFuelSummary() {
+            try {
+                const response = await fetchWithAuth('/api/company-fuel/summary');
+                if (!response.ok) throw new Error('Impossible de charger le résumé du stock');
+                const data = await response.json();
+
+                // Cartes de synthèse
+                document.getElementById('totalSupplied').textContent = `${formatNumber(data.totalSuppliedLiters)} L`;
+                document.getElementById('suppliesCount').textContent = `${data.totalSuppliesCount} approvisionnement(s)`;
+
+                document.getElementById('remainingCompanyStock').textContent = `${formatNumber(data.remainingCompanyStockLiters)} L`;
+                document.getElementById('availableForEmployees').textContent = `${formatNumber(data.availableForEmployeesLiters)} L`;
+                document.getElementById('totalConsumed').textContent = `${formatNumber(data.totalConsumedLiters)} L`;
+
+                document.getElementById('physicalStockBadge').textContent = `Stock physique restant : ${formatNumber(data.remainingPhysicalStockLiters)} L`;
+
+                // Calcul des pourcentages pour la barre visuelle
+                const total = data.totalSuppliedLiters > 0 ? data.totalSuppliedLiters : 1;
+                const pctRemaining = Math.max(0, Math.min(100, (data.remainingCompanyStockLiters / total) * 100));
+                const pctAvailable = Math.max(0, Math.min(100, (data.availableForEmployeesLiters / total) * 100));
+                const pctConsumed = Math.max(0, Math.min(100, (data.totalConsumedLiters / total) * 100));
+
+                const barRem = document.getElementById('barRemaining');
+                const barAvail = document.getElementById('barAvailable');
+                const barCons = document.getElementById('barConsumed');
+
+                barRem.style.width = `${pctRemaining}%`;
+                barAvail.style.width = `${pctAvailable}%`;
+                barCons.style.width = `${pctConsumed}%`;
+
+                document.getElementById('barRemainingText').textContent = pctRemaining > 10 ? `${Math.round(pctRemaining)}%` : '';
+                document.getElementById('barAvailableText').textContent = pctAvailable > 10 ? `${Math.round(pctAvailable)}%` : '';
+                document.getElementById('barConsumedText').textContent = pctConsumed > 10 ? `${Math.round(pctConsumed)}%` : '';
+
+                document.getElementById('legendRemaining').textContent = `${formatNumber(data.remainingCompanyStockLiters)} L (${Math.round(pctRemaining)}%)`;
+                document.getElementById('legendAvailable').textContent = `${formatNumber(data.availableForEmployeesLiters)} L (${Math.round(pctAvailable)}%)`;
+                document.getElementById('legendConsumed').textContent = `${formatNumber(data.totalConsumedLiters)} L (${Math.round(pctConsumed)}%)`;
+
+            } catch (err) {
+                console.error(err);
+                if (typeof showToast === 'function') {
+                    showToast('Erreur lors du chargement des statistiques de carburant', 'error');
+                }
+            }
+        }
+
+        async function loadSuppliesList() {
+            const tbody = document.getElementById('suppliesTableBody');
+            try {
+                const response = await fetchWithAuth('/api/company-fuel/supplies');
+                if (!response.ok) throw new Error('Impossible de charger les approvisionnements');
+                const supplies = await response.json();
+                currentSupplies = supplies;
+
+                if (!supplies || supplies.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">
+                        <i class="fas fa-info-circle fa-2x mb-2 d-block"></i>
+                        Aucun approvisionnement enregistré pour le moment. Cliquez sur "Nouvel Approvisionnement" pour ajouter du carburant.
+                    </td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                supplies.forEach(s => {
+                    const supplyDate = s.supplyDate ? new Date(s.supplyDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${supplyDate}</strong></td>
+                        <td><span class="badge bg-primary fs-6 px-2 py-1">${formatNumber(s.quantityInLiters)} L</span></td>
+                        <td>${s.supplier || '<span class="text-muted">-</span>'}</td>
+                        <td><code>${s.referenceNumber || '-'}</code></td>
+                        <td><small class="text-muted">${s.createdBy || '-'}</small></td>
+                        <td><small>${s.notes || '-'}</small></td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditModal(${s.id})" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteSupply(${s.id}, ${s.quantityInLiters})" title="Supprimer">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Erreur lors du chargement des données.</td></tr>`;
+            }
+        }
+
+        // Enregistrer nouvel approvisionnement
+        document.getElementById('addSupplyForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('saveSupplyBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Enregistrement...`;
+
+            const quantity = parseFloat(document.getElementById('supplyQuantity').value);
+            const dateVal = document.getElementById('supplyDate').value;
+            const supplier = document.getElementById('supplySupplier').value;
+            const reference = document.getElementById('supplyReference').value;
+            const notes = document.getElementById('supplyNotes').value;
+
+            const payload = {
+                quantityInLiters: quantity,
+                supplyDate: dateVal ? new Date(dateVal).toISOString() : new Date().toISOString(),
+                supplier: supplier,
+                referenceNumber: reference,
+                notes: notes
+            };
+
+            try {
+                const response = await fetchWithAuth('/api/company-fuel/supplies', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.message || 'Erreur lors de l\'enregistrement de l\'approvisionnement');
+                }
+
+                bootstrap.Modal.getInstance(document.getElementById('addSupplyModal')).hide();
+                document.getElementById('addSupplyForm').reset();
+                if (typeof showToast === 'function') {
+                    showToast('Approvisionnement ajouté avec succès !', 'success');
+                }
+                await loadFuelData();
+            } catch (err) {
+                alert(err.message || 'Une erreur est survenue');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-check me-1"></i> Enregistrer`;
+            }
+        });
+
+        // Ouvrir modal modification
+        function openEditModal(id) {
+            const supply = currentSupplies.find(s => s.id === id);
+            if (!supply) return;
+
+            document.getElementById('editSupplyId').value = supply.id;
+            document.getElementById('editSupplyQuantity').value = supply.quantityInLiters;
+            if (supply.supplyDate) {
+                const d = new Date(supply.supplyDate);
+                document.getElementById('editSupplyDate').value = d.toISOString().split('T')[0];
+            } else {
+                document.getElementById('editSupplyDate').value = '';
+            }
+            document.getElementById('editSupplySupplier').value = supply.supplier || '';
+            document.getElementById('editSupplyReference').value = supply.referenceNumber || '';
+            document.getElementById('editSupplyNotes').value = supply.notes || '';
+
+            const modal = new bootstrap.Modal(document.getElementById('editSupplyModal'));
+            modal.show();
+        }
+
+        // Mettre à jour approvisionnement
+        document.getElementById('editSupplyForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('updateSupplyBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Mise à jour...`;
+
+            const id = parseInt(document.getElementById('editSupplyId').value);
+            const quantity = parseFloat(document.getElementById('editSupplyQuantity').value);
+            const dateVal = document.getElementById('editSupplyDate').value;
+            const supplier = document.getElementById('editSupplySupplier').value;
+            const reference = document.getElementById('editSupplyReference').value;
+            const notes = document.getElementById('editSupplyNotes').value;
+
+            const payload = {
+                id: id,
+                quantityInLiters: quantity,
+                supplyDate: dateVal ? new Date(dateVal).toISOString() : null,
+                supplier: supplier,
+                referenceNumber: reference,
+                notes: notes
+            };
+
+            try {
+                const response = await fetchWithAuth('/api/company-fuel/supplies', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.message || 'Erreur lors de la mise à jour');
+                }
+
+                bootstrap.Modal.getInstance(document.getElementById('editSupplyModal')).hide();
+                if (typeof showToast === 'function') {
+                    showToast('Approvisionnement mis à jour avec succès', 'success');
+                }
+                await loadFuelData();
+            } catch (err) {
+                alert(err.message || 'Une erreur est survenue');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-save me-1"></i> Mettre à jour`;
+            }
+        });
+
+        // Supprimer approvisionnement
+        async function deleteSupply(id, quantity) {
+            if (!confirm(`Êtes-vous sûr de vouloir supprimer cet approvisionnement de ${formatNumber(quantity)} L ?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetchWithAuth(`/api/company-fuel/supplies/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.message || 'Erreur lors de la suppression');
+                }
+
+                if (typeof showToast === 'function') {
+                    showToast('Approvisionnement supprimé avec succès', 'success');
+                }
+                await loadFuelData();
+            } catch (err) {
+                alert(err.message || 'Une erreur est survenue');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialiser la date du jour par défaut dans le formulaire d'ajout
+            document.getElementById('supplyDate').value = new Date().toISOString().split('T')[0];
+            loadFuelData();
+        });
+    </script>
+}

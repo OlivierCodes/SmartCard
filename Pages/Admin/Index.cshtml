@@ -31,7 +31,6 @@
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Employés</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalEmployees">0</div>
-                           
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -44,13 +43,12 @@
 
     <div class="col-xl-4 col-md-6 mb-4">
         <a asp-page="/Cards/Index" class="text-decoration-none">
-            <div class="card border-left-success shadow h-100 py-2">
+            <div class="card border-left-secondary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Cartes Actives</div>
+                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Cartes Actives</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeCards">0</div>
-                            
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-id-card fa-2x text-gray-300"></i>
@@ -62,19 +60,62 @@
     </div>
 
     <div class="col-xl-4 col-md-12 mb-4">
-        <div class="card border-left-info shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Stock disponible</div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="availableQuota">0 L</div>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+        <a asp-page="/FuelStock/Index" class="text-decoration-none">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Reste en Stock Entreprise</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="remainingCompanyStock">0 L</div>
+                            <small class="text-success font-weight-bold">Disponible pour distribution</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-gas-pump fa-2x text-gray-300"></i>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-6 col-md-6 mb-4">
+        <a asp-page="/Quotas" class="text-decoration-none">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">À Disposition des Employés</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="availableForEmployees">0 L</div>
+                            <small class="text-muted">Quotas attribués non encore consommés</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-hand-holding-water fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-xl-6 col-md-6 mb-4">
+        <a asp-page="/Consumptions" class="text-decoration-none">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total Consommé</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalConsumed">0 L</div>
+                            <small class="text-muted">Carburant prélevé à la pompe</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-burn fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
     </div>
 </div>
 
@@ -275,27 +316,30 @@
                 }
             }
 
-            // Load total available quota for all employees in current month
+            // Load fuel summary statistics (reste en entreprise, à disposition, consommé)
             try {
-                const response = await fetchWithAuth('/api/quotas/available-total');
+                const response = await fetchWithAuth('/api/company-fuel/summary');
 
                 if (response.status === 401) {
                     window.location.href = '/Login';
                     return;
                 }
 
-                const available = await response.json();
+                if (response.ok) {
+                    const summary = await response.json();
+                    const formatL = num => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 2 }).format(num || 0) + ' L';
 
-                const availableQuotaElement = await waitForElement('#availableQuota');
-                availableQuotaElement.textContent = `${available} L`;
-            } catch (error) {
-                console.error('Error loading available quota:', error);
-                try {
-                    const availableQuotaElement = await waitForElement('#availableQuota');
-                    availableQuotaElement.textContent = "0 L";
-                } catch (domError) {
-                    console.error("Could not update availableQuota element:", domError);
+                    const remainingElem = await waitForElement('#remainingCompanyStock');
+                    remainingElem.textContent = formatL(summary.remainingCompanyStockLiters);
+
+                    const availableElem = await waitForElement('#availableForEmployees');
+                    availableElem.textContent = formatL(summary.availableForEmployeesLiters);
+
+                    const consumedElem = await waitForElement('#totalConsumed');
+                    consumedElem.textContent = formatL(summary.totalConsumedLiters);
                 }
+            } catch (error) {
+                console.error('Error loading fuel summary:', error);
             }
         }
 
