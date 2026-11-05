@@ -26,8 +26,9 @@
             background-color: #f8fafc;
         }
     </style>
+    @await RenderSectionAsync("Styles", required: false)
 </head>
-<body class="bg-light">
+<body class="@(ViewData["BodyClass"] ?? "bg-light")">
     <main role="main">
         @RenderBody()
     </main>
