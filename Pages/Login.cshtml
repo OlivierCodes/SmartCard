@@ -19,8 +19,9 @@
 
         <div class="body">
             <img src="~/images/illustrations/secure-access.svg" class="auth-illu" alt="" />
-            <h2>Votre carburant, sous contrôle.</h2>
-            <p>Cartes, quotas et consommations de toute votre flotte réunis dans un seul espace sécurisé.</p>
+            <span class="kicker">Plateforme de gestion</span>
+            <h2>Pilotage des cartes et de la consommation de carburant</h2>
+            <p>Un espace unique et sécurisé pour administrer les cartes, les quotas et le suivi des consommations de votre organisation.</p>
             <ul class="auth-points">
                 <li><i class="fas fa-id-card"></i>Gestion des cartes et des employés</li>
                 <li><i class="fas fa-sliders"></i>Quotas mensuels contrôlés automatiquement</li>
@@ -28,7 +29,11 @@
             </ul>
         </div>
 
-        <div class="foot">&copy; @DateTime.Now.Year SmartCard System</div>
+        <div class="foot">
+            <span>&copy; @DateTime.Now.Year SmartCard System</span>
+            <span class="sep"></span>
+            <span><i class="fas fa-lock me-1"></i>Connexion chiffrée</span>
+        </div>
     </aside>
 
     <!-- Formulaire -->
@@ -41,14 +46,15 @@
         </div>
 
         <div class="auth-card">
-            <h1>Bon retour 👋</h1>
-            <p class="sub">Connectez-vous pour accéder à votre espace de gestion.</p>
+            <span class="auth-eyebrow"><i class="fas fa-shield-alt me-2" aria-hidden="true"></i>Espace sécurisé</span>
+            <h1>Connexion</h1>
+            <p class="sub">Identifiez-vous avec vos identifiants professionnels pour accéder à la plateforme.</p>
 
             <form method="post" id="loginForm" novalidate>
                 <div asp-validation-summary="ModelOnly" class="auth-alert" role="alert"></div>
 
                 <div class="auth-field">
-                    <label asp-for="Input.Email">Adresse e-mail</label>
+                    <label asp-for="Input.Email">Adresse e-mail professionnelle</label>
                     <div class="auth-input">
                         <i class="far fa-envelope icon" aria-hidden="true"></i>
                         <input asp-for="Input.Email" type="email" class="form-control" placeholder="nom@entreprise.com"
@@ -83,7 +89,7 @@
                 <div class="collapse" id="forgotHelp">
                     <div class="auth-help-text">
                         <i class="fas fa-circle-info me-1" aria-hidden="true"></i>
-                        Contactez l'administrateur SmartCard de votre entreprise pour réinitialiser votre mot de passe.
+                        Pour réinitialiser votre mot de passe, contactez l'administrateur SmartCard de votre organisation.
                     </div>
                 </div>
 
@@ -93,13 +99,18 @@
                     <i class="fas fa-arrow-right arrow" aria-hidden="true"></i>
                 </button>
 
-                <div class="auth-secure">
-                    <i class="fas fa-shield-alt" aria-hidden="true"></i>Connexion sécurisée et chiffrée
+                <div class="auth-notice">
+                    <i class="fas fa-circle-info" aria-hidden="true"></i>
+                    <span>Accès réservé au personnel autorisé. Ne partagez jamais vos identifiants.</span>
                 </div>
             </form>
         </div>
 
-        <footer class="auth-footer">&copy; @DateTime.Now.Year SmartCard System &middot; <a href="/Privacy" class="text-reset">Confidentialité</a></footer>
+        <footer class="auth-footer">
+            <span>&copy; @DateTime.Now.Year SmartCard System</span>
+            <a href="/Privacy">Confidentialité</a>
+            <a href="/">Accueil</a>
+        </footer>
     </section>
 </div>
 
