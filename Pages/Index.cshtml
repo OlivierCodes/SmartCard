@@ -1,0 +1,305 @@
+@page
+@{
+    Layout = null;
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var ctaUrl = isAuthenticated ? "/Admin/Index" : "/Login";
+    var ctaLabel = isAuthenticated ? "Accéder au tableau de bord" : "Se connecter";
+}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartCard - Gestion intelligente des cartes carburant</title>
+    <meta name="description" content="SmartCard simplifie la gestion des cartes carburant, des quotas et des consommations de votre flotte, en temps réel." />
+    <link rel="icon" href="~/favicon.ico" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
+</head>
+<body class="landing">
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top lp-nav" id="lpNav" aria-label="Navigation principale">
+        <div class="container">
+            <a class="navbar-brand lp-brand d-flex align-items-center" href="/">
+                <span class="logo"><i class="fas fa-gas-pump" aria-hidden="true"></i></span>SmartCard
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#lpMenu" aria-controls="lpMenu" aria-expanded="false" aria-label="Ouvrir le menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="lpMenu">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item"><a class="nav-link" href="#fonctionnalites">Fonctionnalités</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#fonctionnement">Fonctionnement</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#mobile">Application mobile</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#rapports">Rapports</a></li>
+                </ul>
+                <a href="@ctaUrl" class="btn btn-primary btn-sc">
+                    <i class="fas @(isAuthenticated ? "fa-gauge-high" : "fa-right-to-bracket") me-2" aria-hidden="true"></i>@ctaLabel
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Hero -->
+        <section class="lp-hero">
+            <div class="container">
+                <div class="row align-items-center g-5">
+                    <div class="col-lg-6">
+                        <span class="lp-badge"><span class="dot"></span>Suivi en temps réel</span>
+                        <h1>La gestion du carburant de votre flotte, <span class="hl">enfin maîtrisée.</span></h1>
+                        <p class="lead">
+                            SmartCard centralise vos cartes carburant, quotas mensuels et consommations
+                            sur une seule plateforme. Moins de papier, plus de contrôle.
+                        </p>
+                        <div class="d-flex flex-wrap gap-3 mt-4">
+                            <a href="@ctaUrl" class="btn btn-primary btn-sc btn-lg">@ctaLabel <i class="fas fa-arrow-right ms-2" aria-hidden="true"></i></a>
+                            <a href="#fonctionnalites" class="btn btn-sc btn-outline btn-lg">Découvrir</a>
+                        </div>
+                        <div class="lp-trust d-flex flex-wrap gap-4 mt-4">
+                            <span><i class="fas fa-circle-check me-1" aria-hidden="true"></i> Données sécurisées</span>
+                            <span><i class="fas fa-circle-check me-1" aria-hidden="true"></i> Web &amp; mobile</span>
+                            <span><i class="fas fa-circle-check me-1" aria-hidden="true"></i> Export Excel</span>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <img src="~/images/illustrations/hero-dashboard.svg" class="lp-hero-illu" alt="Illustration du tableau de bord SmartCard, d'une carte carburant et d'une pompe" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <div class="container lp-stats">
+            <div class="inner">
+                <div class="row g-4">
+                    <div class="col-6 col-md-3 lp-stat"><div class="num">100%</div><div class="lbl">Traçabilité des pleins</div></div>
+                    <div class="col-6 col-md-3 lp-stat"><div class="num">24/7</div><div class="lbl">Accès à vos données</div></div>
+                    <div class="col-6 col-md-3 lp-stat"><div class="num">0</div><div class="lbl">Bon papier perdu</div></div>
+                    <div class="col-6 col-md-3 lp-stat"><div class="num">1 clic</div><div class="lbl">Pour exporter un rapport</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <section class="lp-section" id="fonctionnalites">
+            <div class="container">
+                <div class="text-center mb-5 reveal">
+                    <span class="lp-eyebrow">Fonctionnalités</span>
+                    <h2 class="lp-title">Tout ce qu'il faut pour piloter votre carburant</h2>
+                    <p class="lp-sub mx-auto">Une plateforme pensée pour les gestionnaires de flotte, les services administratifs et les pompistes.</p>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-6 col-lg-3 reveal">
+                        <div class="lp-feature">
+                            <div class="lp-icon blue"><i class="fas fa-id-card" aria-hidden="true"></i></div>
+                            <h3>Cartes carburant</h3>
+                            <p>Émettez, attribuez, bloquez ou réactivez les cartes de vos employés en quelques secondes.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 reveal">
+                        <div class="lp-feature">
+                            <div class="lp-icon green"><i class="fas fa-sliders" aria-hidden="true"></i></div>
+                            <h3>Quotas mensuels</h3>
+                            <p>Définissez un quota par employé et par mois. Les dépassements sont bloqués automatiquement.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 reveal">
+                        <div class="lp-feature">
+                            <div class="lp-icon orange"><i class="fas fa-oil-can" aria-hidden="true"></i></div>
+                            <h3>Stock entreprise</h3>
+                            <p>Suivez les approvisionnements et le niveau de stock de carburant de l'entreprise.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 reveal">
+                        <div class="lp-feature">
+                            <div class="lp-icon purple"><i class="fas fa-user-shield" aria-hidden="true"></i></div>
+                            <h3>Rôles &amp; accès</h3>
+                            <p>Administrateurs, gestionnaires, pompistes : chacun accède uniquement à ce qui le concerne.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 reveal">
+                        <div class="lp-feature">
+                            <div class="lp-icon blue"><i class="fas fa-users" aria-hidden="true"></i></div>
+                            <h3>Employés</h3>
+                            <p>Une fiche par employé avec sa carte, son quota et l'historique complet de ses pleins.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 reveal">
+                        <div class="lp-feature">
+                            <div class="lp-icon green"><i class="fas fa-building" aria-hidden="true"></i></div>
+                            <h3>Départements</h3>
+                            <p>Organisez vos équipes par service et comparez les consommations entre départements.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 reveal">
+                        <div class="lp-feature">
+                            <div class="lp-icon orange"><i class="fas fa-bell" aria-hidden="true"></i></div>
+                            <h3>Notifications</h3>
+                            <p>Chaque plein validé remonte instantanément sur le tableau de bord, sans rafraîchir.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 reveal">
+                        <div class="lp-feature">
+                            <div class="lp-icon purple"><i class="fas fa-file-excel" aria-hidden="true"></i></div>
+                            <h3>Exports</h3>
+                            <p>Exportez consommations et quotas en Excel pour vos rapports et votre comptabilité.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How it works -->
+        <section class="lp-section alt" id="fonctionnement">
+            <div class="container">
+                <div class="text-center mb-5 reveal">
+                    <span class="lp-eyebrow">Fonctionnement</span>
+                    <h2 class="lp-title">Trois étapes, zéro complication</h2>
+                </div>
+                <div class="row g-5">
+                    <div class="col-md-4 lp-step reveal">
+                        <div class="n">1</div>
+                        <h3>Attribuez une carte</h3>
+                        <p>Créez l'employé, associez-lui une carte SmartCard et son département.</p>
+                    </div>
+                    <div class="col-md-4 lp-step reveal">
+                        <div class="n">2</div>
+                        <h3>Fixez le quota</h3>
+                        <p>Définissez le volume de carburant autorisé pour le mois en cours.</p>
+                    </div>
+                    <div class="col-md-4 lp-step reveal">
+                        <div class="n">3</div>
+                        <h3>Suivez chaque plein</h3>
+                        <p>Le pompiste valide la carte sur mobile, la consommation est enregistrée aussitôt.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Mobile -->
+        <section class="lp-section" id="mobile">
+            <div class="container">
+                <div class="row align-items-center g-5">
+                    <div class="col-lg-6 order-lg-2 reveal">
+                        <span class="lp-eyebrow">Application mobile</span>
+                        <h2 class="lp-title">À la pompe, tout se fait depuis le téléphone</h2>
+                        <p class="lp-sub">Les pompistes identifient la carte, vérifient le quota restant et valident le plein en quelques gestes.</p>
+                        <ul class="lp-check">
+                            <li><i class="fas fa-circle-check" aria-hidden="true"></i><span>Vérification instantanée du quota disponible</span></li>
+                            <li><i class="fas fa-circle-check" aria-hidden="true"></i><span>Historique des consommations par employé</span></li>
+                            <li><i class="fas fa-circle-check" aria-hidden="true"></i><span>Connexion sécurisée pour chaque pompiste</span></li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-6 order-lg-1 reveal">
+                        <img src="~/images/illustrations/mobile-attendant.svg" class="lp-illu" alt="Illustration de l'application mobile validant un plein de carburant" loading="lazy" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reports -->
+        <section class="lp-section alt" id="rapports">
+            <div class="container">
+                <div class="row align-items-center g-5">
+                    <div class="col-lg-6 reveal">
+                        <span class="lp-eyebrow">Rapports</span>
+                        <h2 class="lp-title">Des chiffres clairs pour décider vite</h2>
+                        <p class="lp-sub">Visualisez les consommations par période, département ou employé, et repérez les écarts d'un coup d'œil.</p>
+                        <ul class="lp-check">
+                            <li><i class="fas fa-circle-check" aria-hidden="true"></i><span>Histogrammes de consommation par période</span></li>
+                            <li><i class="fas fa-circle-check" aria-hidden="true"></i><span>Synthèse du stock carburant de l'entreprise</span></li>
+                            <li><i class="fas fa-circle-check" aria-hidden="true"></i><span>Export Excel prêt pour la comptabilité</span></li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-6 reveal">
+                        <img src="~/images/illustrations/analytics.svg" class="lp-illu" alt="Illustration de graphiques de consommation et d'un export Excel" loading="lazy" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Port -->
+        <section class="lp-section">
+            <div class="container">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8 reveal">
+                        <div class="lp-port">
+                            <div class="content">
+                                <h2>Conçu pour les opérations portuaires</h2>
+                                <p>Des engins de manutention aux véhicules de service, SmartCard accompagne la gestion du carburant au quotidien.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 text-center reveal">
+                        <img src="~/images/carte.png" class="lp-card-img" alt="Carte bon de carburant SmartCard, recto et verso" loading="lazy" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="pb-5 mb-4">
+            <div class="container">
+                <div class="lp-cta text-center reveal">
+                    <h2>Prêt à reprendre le contrôle de votre carburant ?</h2>
+                    <p class="mb-4 opacity-75">Connectez-vous à votre espace de gestion SmartCard.</p>
+                    <a href="@ctaUrl" class="btn btn-light btn-sc btn-lg">@ctaLabel <i class="fas fa-arrow-right ms-2" aria-hidden="true"></i></a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="lp-footer">
+        <div class="container">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                <a class="lp-brand d-flex align-items-center" href="/">
+                    <span class="logo"><i class="fas fa-gas-pump" aria-hidden="true"></i></span>SmartCard
+                </a>
+                <div class="d-flex gap-4 small">
+                    <a href="#fonctionnalites">Fonctionnalités</a>
+                    <a href="/Privacy">Confidentialité</a>
+                    <a href="/Login">Connexion</a>
+                </div>
+            </div>
+            <hr class="border-secondary my-4" />
+            <p class="small text-center mb-0">&copy; @DateTime.Now.Year SmartCard System. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function () {
+            var nav = document.getElementById('lpNav');
+            function onScroll() { nav.classList.toggle('scrolled', window.scrollY > 10); }
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+
+            // Ferme le menu mobile après un clic sur un lien d'ancre
+            document.querySelectorAll('#lpMenu .nav-link').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    var menu = document.getElementById('lpMenu');
+                    if (menu.classList.contains('show')) bootstrap.Collapse.getOrCreateInstance(menu).hide();
+                });
+            });
+
+            var items = document.querySelectorAll('.reveal');
+            if (!('IntersectionObserver' in window)) {
+                items.forEach(function (el) { el.classList.add('visible'); });
+                return;
+            }
+            var io = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+                });
+            }, { threshold: 0.12 });
+            items.forEach(function (el) { io.observe(el); });
+        })();
+    </script>
+</body>
+</html>

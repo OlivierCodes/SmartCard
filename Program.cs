@@ -267,8 +267,7 @@ app.MapControllers();
 
 app.MapStaticAssets();
 
-// Rediriger la racine vers la page de connexion
-app.MapGet("/", () => Results.Redirect("/Login"));
+// La racine "/" affiche la landing page (Pages/Index.cshtml)
 
 app.MapRazorPages()
    .WithStaticAssets();
